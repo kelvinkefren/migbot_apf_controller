@@ -11,4 +11,4 @@ This package is designed to receive Force from the Dynamic Obstacle Avoidance Pa
 ## output:
 
     /APFM/Wrench
-    /oAPFM/cmd_vel
+    /APFM/cmd_vel
