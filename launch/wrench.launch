@@ -1,0 +1,13 @@
+<launch>
+  <!-- Carrega os parâmetros do arquivo YAML -->
+  <rosparam file="$(find migbot_apf_controller)/config/param.yaml" command="load" />
+
+  <!-- Lança o nó force_calculator -->
+  <node
+    name="wrench_calculator"
+    pkg="migbot_apf_controller"
+    type="wrench_calculator.py"
+    output="screen">
+    <!-- Use o nome do nó para passar os parâmetros -->
+  </node>
+</launch>
