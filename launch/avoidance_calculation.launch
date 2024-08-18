@@ -1,0 +1,36 @@
+<launch>
+    <!-- First, run gazebo_scenario.py from the migbot_apf_controller package -->
+    <node
+        name="gazebo_scenario"
+        pkg="migbot_apf_controller"
+        type="gazebo_scenario.py"
+        output="screen"
+        required="true" />
+
+    <!-- Carrega os parâmetros do arquivo YAML -->
+    <rosparam file="$(find dynamic_obstacle_avoidance)/config/parameters.yaml" command="load" />
+
+    <!-- Lança o nó scenario_controller -->
+    <node
+        name="scenario_controller"
+        pkg="dynamic_obstacle_avoidance"
+        type="scenario_controller.py"
+        output="screen" />
+
+    <!-- Lança o nó apfm_obstacle_avoidance -->
+    <node
+        name="apfm_obstacle_avoidance"
+        pkg="dynamic_obstacle_avoidance"
+        type="apfm_obstacle_avoidance.py"
+        output="screen" />
+
+    <!-- Finally, run wrench_calculator.py from the migbot_apf_controller package -->
+    <node
+        name="wrench_calculator"
+        pkg="migbot_apf_controller"
+        type="wrench_calculator.py"
+        output="screen"        
+        required="true">
+        <remap from="/apfm/wrench" to="/Wrench" />
+    </node>
+</launch>

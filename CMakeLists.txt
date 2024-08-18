@@ -24,6 +24,7 @@ include_directories(
 ## Install Python scripts
 install(PROGRAMS
   scripts/wrench_calculator.py
+  scripts/gazebo_scenario.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

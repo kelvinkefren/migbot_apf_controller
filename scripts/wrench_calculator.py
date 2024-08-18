@@ -11,12 +11,15 @@ import numpy as np
 class ForceCalculator:
     def __init__(self):
         rospy.init_node('force_calculator')
-
+        
+        # Initialize goal_position with a default value
+        self.goal_position = Vector3()
         # Constants
         self.MAX_WRENCH = rospy.get_param('~max_wrench', 0.3)
         self.MAX_TORQUE_WRENCH = rospy.get_param('~max_torque_wrench', 0.1)
         self.MIN_TORQUE_WRENCH = rospy.get_param('~min_torque_wrench', -0.1)
         self.MAX_LINEAR_SPEED = rospy.get_param('~max_linear_speed', 1.0)
+        self.TOLERANCE = rospy.get_param('~tolerance', 2.0)
 
         # Publishers
         self.twist_pub = rospy.Publisher('/apfm/cmd_vel', Twist, queue_size=10)
@@ -25,12 +28,10 @@ class ForceCalculator:
         # Subscribers
         self.force_sub = rospy.Subscriber('/apfm/total_force', Vector3, self.force_callback)
         self.robot_sub = rospy.Subscriber('/scenario/output_robot',RobotState, self.robot_callback)
-        
+        self.goal_sub = rospy.Subscriber('/scenario/goal', Vector3, self.goal_callback)
+
         # Initialize variables
         self.current_force = Vector3()
-        self.time_step_counter = 0
-        self.velocity_change_interval = 10  # Adjust as necessary
-        self.obstacles = []  # Assume a list of obstacles with name and twist information
 
     def force_callback(self, msg):
         self.current_force = msg
@@ -38,6 +39,11 @@ class ForceCalculator:
 
     def robot_callback(self, msg):
         self.robot_orientation = msg.orientation
+        self.robot_position = msg.position
+        self.calculate_and_publish()
+
+    def goal_callback(self, msg):
+        self.goal_position = msg
         self.calculate_and_publish()
 
     def calculate_and_publish(self):
@@ -75,6 +81,18 @@ class ForceCalculator:
         wrench_msg.torque.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
         twist_msg.linear.x = min(self.MAX_LINEAR_SPEED, force.x)
         twist_msg.angular.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
+
+        # Calculate the distance to the goal
+        distance_to_goal = math.sqrt(
+            (self.robot_position.x - self.goal_position.x) ** 2 +
+            (self.robot_position.y - self.goal_position.y) ** 2 +
+            (self.robot_position.z - self.goal_position.z) ** 2
+        )
+
+        if distance_to_goal <= self.TOLERANCE:
+            # If the robot is near the goal, set force and torque to zero
+            force = Vector3(0.0, 0.0, 0.0)
+            torque = Vector3(0.0, 0.0, 0.0)
 
         self.twist_pub.publish(twist_msg)
         self.wrench_pub.publish(wrench_msg)
