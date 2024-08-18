@@ -35,16 +35,15 @@ class ForceCalculator:
 
     def force_callback(self, msg):
         self.current_force = msg
-        self.calculate_and_publish()
 
     def robot_callback(self, msg):
         self.robot_orientation = msg.orientation
         self.robot_position = msg.position
-        self.calculate_and_publish()
+        if self.current_force is not None and self.goal_position is not None:
+            self.calculate_and_publish()
 
     def goal_callback(self, msg):
         self.goal_position = msg
-        self.calculate_and_publish()
 
     def calculate_and_publish(self):
         force = self.current_force
