@@ -1,6 +1,5 @@
 wrench_calculator:
-  ros__parameters:
-    max_wrench: 0.3
-    max_torque_wrench: 0.1
-    min_torque_wrench: -0.1
-    max_linear_speed: 1.0
+  max_wrench: 0.3
+  max_torque_wrench: 0.1
+  min_torque_wrench: -0.1
+  max_linear_speed: 1.0
