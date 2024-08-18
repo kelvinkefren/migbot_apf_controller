@@ -20,12 +20,12 @@ INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 # Definição de cenários
 SCENARIOS = {
     'scenario_0': {
-        'vegetation1_buoy': {'position': [58.1, 44.5], 'velocity': [-0.4, -0]},
-        'vegetation2_buoy': {'position': [28, 28], 'velocity': [0, 0]},
-        'vegetation3_buoy': {'position': [20.4, 43.0], 'velocity': [0, 0]},
-        'branche1_buoy': {'position': [0, 10], 'velocity': [0, 0]},
-        'branche2_buoy': {'position': [54, 72], 'velocity': [0, -0.3]},
-        'branche3_buoy': {'position': [36, 72], 'velocity': [0.28, -0.16]},
+        'vegetation1_buoy': {'position': [100, 100], 'velocity': [-0.4, -0]},
+        'vegetation2_buoy': {'position': [100, 100], 'velocity': [0, 0]},
+        'vegetation3_buoy': {'position': [100, 100], 'velocity': [0, 0]},
+        'branche1_buoy': {'position': [100, 100], 'velocity': [0, 0]},
+        'branche2_buoy': {'position': [100, 100], 'velocity': [0, -0.3]},
+        'branche3_buoy': {'position': [100, 100], 'velocity': [0.28, -0.16]},
     },
 }
 
@@ -58,6 +58,9 @@ class GazeboScenario:
         self.robot_pub = rospy.Publisher('/scenario/input_robot', RobotState, queue_size=10)
         self.obstacle_pub = rospy.Publisher('/scenario/input_obstacles', ObstacleArray, queue_size=10)
 
+        # Retrieve the robot domain radius parameter
+        self.robot_domain_radius = rospy.get_param('/apfm_obstacle_avoidance/robot_domain_radius', default=0.5)
+        
         # Configurar as posições e velocidades iniciais com base no cenário
         self.set_initial_positions()
 
@@ -78,7 +81,7 @@ class GazeboScenario:
                 self.migbot.position = data.pose[i].position
                 self.migbot.velocity = data.twist[i].linear
                 self.migbot.orientation = data.pose[i].orientation
-                self.migbot.radius = 0.5  # Exemplo, pode ser configurado como um parâmetro
+                self.migbot.radius = self.robot_domain_radius
                 self.robot_pub.publish(self.migbot)
             elif name in OBSTACLE_NAMES:
                 for ob in self.obstacles:
@@ -108,7 +111,7 @@ def set_robot_position_and_velocity(position, velocity):
         state.pose.position.y = position[1]
         state.twist.linear.x = velocity[0]
         state.twist.linear.y = velocity[1]
-        state.pose.orientation = Quaternion(0, 0, 0.3827, 0.9239)  # Sem rotação
+        state.pose.orientation = Quaternion(0, 0, 0, 1)  # Sem rotação
 
         response = set_state(state)
         return response.success

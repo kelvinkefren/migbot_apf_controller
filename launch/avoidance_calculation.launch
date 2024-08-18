@@ -24,6 +24,10 @@
         type="apfm_obstacle_avoidance.py"
         output="screen" />
 
+    
+    <!-- Carrega os parâmetros do arquivo YAML -->
+    <!-- <rosparam file="$(find migbot_apf_controller)/config/param.yaml" command="load" /> -->
+
     <!-- Finally, run wrench_calculator.py from the migbot_apf_controller package -->
     <node
         name="wrench_calculator"

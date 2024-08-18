@@ -19,11 +19,14 @@ class ForceCalculator:
         self.MAX_TORQUE_WRENCH = rospy.get_param('~max_torque_wrench', 0.1)
         self.MIN_TORQUE_WRENCH = rospy.get_param('~min_torque_wrench', -0.1)
         self.MAX_LINEAR_SPEED = rospy.get_param('~max_linear_speed', 1.0)
-        self.TOLERANCE = rospy.get_param('~tolerance', 2.0)
+        self.TOLERANCE = rospy.get_param('~tolerance', 5.0)
 
         # Publishers
         self.twist_pub = rospy.Publisher('/apfm/cmd_vel', Twist, queue_size=10)
         self.wrench_pub = rospy.Publisher('/apfm/wrench', Wrench, queue_size=10)
+
+        rospy.Timer(rospy.Duration(0.1), self.publisher_wrench)
+
 
         # Subscribers
         self.force_sub = rospy.Subscriber('/apfm/total_force', Vector3, self.force_callback)
@@ -33,35 +36,40 @@ class ForceCalculator:
         # Initialize variables
         self.current_force = Vector3()
 
-    def force_callback(self, msg):
+    def force_callback(self, msg):        
         self.current_force = msg
+        # rospy.loginfo(f"force: {msg}, type: {type(msg)}")
 
     def robot_callback(self, msg):
         self.robot_orientation = msg.orientation
         self.robot_position = msg.position
-        if self.current_force is not None and self.goal_position is not None:
-            self.calculate_and_publish()
 
     def goal_callback(self, msg):
         self.goal_position = msg
 
-    def calculate_and_publish(self):
+    def publisher_wrench(self):
         force = self.current_force
         torque = Vector3() 
 
-        
+       
         orientation_list = [self.robot_orientation.x, self.robot_orientation.y, self.robot_orientation.z, self.robot_orientation.w]
         roll, pitch, yaw = euler_from_quaternion(orientation_list)
 
+        # Agora a variável yaw contém o ângulo de rotação ao redor do eixo z
+        heading = yaw       
+
         # Certifique-se de que ambos os ângulos estão no intervalo [-pi, pi]
-        angle_force = np.arctan2(self.current_force.y, self.current_force.x)
+        angle_force = np.arctan2(force.y, force.x)
         angle_force = (angle_force + np.pi) % (2 * np.pi) - np.pi
+        angle_force_degrees = math.degrees(angle_force)
 
         yaw = (yaw + np.pi) % (2 * np.pi) - np.pi
+        yaw_degrees = math.degrees(yaw)
 
         # Calcule a diferença angular e ajuste para o intervalo [-pi, pi]
         angular_difference =   -(angle_force - yaw)
         angular_difference = (angular_difference + np.pi) % (2 * np.pi) - np.pi
+        angular_difference_degree = math.degrees(angular_difference)  
 
         proportion_factor = 1.0
         torque_value = proportion_factor * angular_difference
@@ -84,8 +92,7 @@ class ForceCalculator:
         # Calculate the distance to the goal
         distance_to_goal = math.sqrt(
             (self.robot_position.x - self.goal_position.x) ** 2 +
-            (self.robot_position.y - self.goal_position.y) ** 2 +
-            (self.robot_position.z - self.goal_position.z) ** 2
+            (self.robot_position.y - self.goal_position.y) ** 2 
         )
 
         if distance_to_goal <= self.TOLERANCE:
