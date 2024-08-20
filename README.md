@@ -43,3 +43,9 @@ INITIAL_ROBOT_VELOCITY -> just put in zero
     -TODO params
 
 Don't need to close the others nodes to start this one.
+
+
+## IN GAZEBO SIMULATION
+
+It is necessary to change the property of the obstacle, to make it move during simulation.
+If I recall right, needs to put kinematic true in the link propertie.
