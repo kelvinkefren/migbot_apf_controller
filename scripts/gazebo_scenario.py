@@ -9,23 +9,21 @@ from gazebo_msgs.msg import ModelState
 from dynamic_obstacle_avoidance.msg import RobotState, ObstacleState, ObstacleArray
 
 ROBOT_NAME = 'migbot'  # Nome do modelo do robô
-OBSTACLE_NAMES = ['vegetation1_buoy','vegetation2_buoy','vegetation3_buoy','branche1_buoy','branche2_buoy']  # Nomes dos obstáculos
+OBSTACLE_NAMES = ['vegetation1_buoy','vegetation2_buoy','vegetation3_buoy','branche3_buoy']  # Nomes dos obstáculos
 OBSTACLE_RADIUS = [1, 1, 1, 9, 7]  # Raios dos obstáculos
 TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist dos modelos
 
 # Posição e velocidade iniciais do robô
-INITIAL_ROBOT_POSE = np.array([10,10])  # Posição inicial do robô
+INITIAL_ROBOT_POSE = np.array([0,30])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 
 # Definição de cenários
 SCENARIOS = {
     'scenario_0': {
-        'vegetation1_buoy': {'position': [100, 100], 'velocity': [-0.4, -0]},
-        'vegetation2_buoy': {'position': [100, 100], 'velocity': [0, 0]},
-        'vegetation3_buoy': {'position': [100, 100], 'velocity': [0, 0]},
-        'branche1_buoy': {'position': [100, 100], 'velocity': [0, 0]},
-        'branche2_buoy': {'position': [100, 100], 'velocity': [0, -0.3]},
-        'branche3_buoy': {'position': [100, 100], 'velocity': [0.28, -0.16]},
+        'vegetation1_buoy': {'position': [15, 12.6], 'velocity': [0, 1.5]},
+        'vegetation2_buoy': {'position': [30, 20], 'velocity': [-0.5, 0,5]},
+        'vegetation3_buoy': {'position': [60, 60], 'velocity': [0, 0]},
+        'branche3_buoy': {'position': [60, 60], 'velocity': [0, 0]},
     },
 }
 

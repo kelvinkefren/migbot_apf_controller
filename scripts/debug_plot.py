@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dynamic_obstacle_avoidance.msg import RobotState, ObstacleArray
 from geometry_msgs.msg import Vector3
+from tf.transformations import euler_from_quaternion
 
 class SimplePlot:
     def __init__(self):
@@ -12,6 +13,7 @@ class SimplePlot:
 
         # Initialize variables
         self.robot_position = None
+        self.robot_orientation = None
         self.force_vector = None
         self.goal_position = None
         self.obstacles = []
@@ -33,6 +35,7 @@ class SimplePlot:
 
     def robot_callback(self, msg):
         self.robot_position = np.array([msg.position.x, msg.position.y])
+        self.robot_orientation = msg.orientation
 
     def obstacle_callback(self, msg):
         self.obstacles = [
@@ -56,10 +59,21 @@ class SimplePlot:
             # Plot the force vector
             if self.force_vector is not None:
                 normalized_force = self.force_vector / np.linalg.norm(self.force_vector)
-                scaled_force = normalized_force * 5  # Scale the vector to a magnitude of 5 units
+                scaled_force = normalized_force * 10  # Scale the vector to a magnitude of 10 units
                 self.ax.arrow(self.robot_position[0], self.robot_position[1],
                               scaled_force[0], scaled_force[1],
                               head_width=2, head_length=2, fc='g', ec='g', label="Force Vector")
+
+                # Calculate the robot's direction vector from its orientation (yaw) and plot it
+                orientation_q = [self.robot_orientation.x, self.robot_orientation.y, self.robot_orientation.z, self.robot_orientation.w]
+                _, _, yaw = euler_from_quaternion(orientation_q)
+                direction_vector = np.array([np.cos(yaw), np.sin(yaw)])
+
+                # Scale the direction vector to half the size of the force vector
+                scaled_direction = direction_vector * (np.linalg.norm(scaled_force) / 2)
+                self.ax.arrow(self.robot_position[0], self.robot_position[1],
+                              scaled_direction[0], scaled_direction[1],
+                              head_width=1, head_length=1, fc='r', ec='r', label="Robot Direction")
 
         # Plot obstacles and their unitary velocity vectors
         for obs in self.obstacles:
