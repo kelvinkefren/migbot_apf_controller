@@ -14,16 +14,16 @@ OBSTACLE_RADIUS = [1, 1, 1, 9, 7]  # Raios dos obstáculos
 TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist dos modelos
 
 # Posição e velocidade iniciais do robô
-INITIAL_ROBOT_POSE = np.array([0,30])  # Posição inicial do robô
+INITIAL_ROBOT_POSE = np.array([-20.1,30])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 
 # Definição de cenários
 SCENARIOS = {
     'scenario_0': {
-        'vegetation1_buoy': {'position': [15, 30], 'velocity': [0, 0]},
-        'vegetation2_buoy': {'position': [30, 20], 'velocity': [0, 0]},
-        'vegetation3_buoy': {'position': [15, 60], 'velocity': [0, 0]},
-        'branche3_buoy': {'position': [15, 10], 'velocity': [0, 0]},
+        'vegetation1_buoy': {'position': [10, 30], 'velocity': [-1, 0]},
+        'vegetation2_buoy': {'position': [300, 20], 'velocity': [0, 0]},
+        'vegetation3_buoy': {'position': [150, 60], 'velocity': [0, 0]},
+        'branche3_buoy': {'position': [150, 400], 'velocity': [0, -1]},
     },
 }
 
@@ -41,7 +41,7 @@ class Obstacle:
 class GazeboScenario:
     def __init__(self):
         rospy.init_node('migbot_controller')
-
+        self.rotation = -60
         # Obter o nome do cenário a partir dos parâmetros ROS
         self.scenario_name = rospy.get_param('~scenario', 'scenario_0')
 
@@ -56,11 +56,18 @@ class GazeboScenario:
         self.robot_pub = rospy.Publisher('/scenario/input_robot', RobotState, queue_size=10)
         self.obstacle_pub = rospy.Publisher('/scenario/input_obstacles', ObstacleArray, queue_size=10)
 
+        # Timer to rotate velocities after 5 seconds
+        rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
+        
         # Retrieve the robot domain radius parameter
         self.robot_domain_radius = rospy.get_param('/apfm_obstacle_avoidance/robot_domain_radius', default=0.5)
         
         # Configurar as posições e velocidades iniciais com base no cenário
         self.set_initial_positions()
+        
+        # Timer to rotate velocities after 5 seconds
+        rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
+
 
     def set_initial_positions(self):
         # Configura a posição inicial e a velocidade do robô
@@ -98,6 +105,23 @@ class GazeboScenario:
             ) for ob, radius in zip(self.obstacles, OBSTACLE_RADIUS)
         ]
         self.obstacle_pub.publish(obstacle_array)
+        
+    
+    def rotate_obstacle_velocities(self, event):
+        # Rotation matrix for 60 degrees clockwise
+        angle_rad = np.radians(self.rotation)
+        rotation_matrix = np.array([
+            [np.cos(angle_rad), np.sin(angle_rad)],
+            [-np.sin(angle_rad), np.cos(angle_rad)]
+        ])
+
+        for ob in self.obstacles:
+            velocity_vector = np.array([ob.velocity.x, ob.velocity.y])
+            rotated_velocity = rotation_matrix.dot(velocity_vector)
+            ob.velocity.x = rotated_velocity[0]
+            ob.velocity.y = rotated_velocity[1]
+            set_obstacle_position_and_velocity(ob.name, [ob.position.x, ob.position.y], rotated_velocity)
+        rospy.loginfo("Obstacle velocities rotated by 60 degrees clockwise")
 
 def set_robot_position_and_velocity(position, velocity):
     rospy.wait_for_service('/gazebo/set_model_state')
@@ -134,6 +158,7 @@ def set_obstacle_position_and_velocity(name, position, velocity):
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: %s" % e)
         return False
+
 
 if __name__ == '__main__':
     try:
