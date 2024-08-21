@@ -26,7 +26,7 @@
 
     
     <!-- Carrega os parâmetros do arquivo YAML -->
-    <!-- <rosparam file="$(find migbot_apf_controller)/config/param.yaml" command="load" /> -->
+    <rosparam file="$(find migbot_apf_controller)/config/param.yaml" command="load" />
 
     <!-- Finally, run wrench_calculator.py from the migbot_apf_controller package -->
     <node
@@ -37,4 +37,5 @@
         required="true">
         <remap from="/apfm/wrench" to="/Wrench" />
     </node>
+    
 </launch>

@@ -20,10 +20,10 @@ INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 # Definição de cenários
 SCENARIOS = {
     'scenario_0': {
-        'vegetation1_buoy': {'position': [15, 12.6], 'velocity': [0, 1.5]},
-        'vegetation2_buoy': {'position': [30, 20], 'velocity': [-0.5, 0,5]},
-        'vegetation3_buoy': {'position': [60, 60], 'velocity': [0, 0]},
-        'branche3_buoy': {'position': [60, 60], 'velocity': [0, 0]},
+        'vegetation1_buoy': {'position': [15, 30], 'velocity': [0, 0]},
+        'vegetation2_buoy': {'position': [30, 20], 'velocity': [0, 0]},
+        'vegetation3_buoy': {'position': [15, 60], 'velocity': [0, 0]},
+        'branche3_buoy': {'position': [15, 10], 'velocity': [0, 0]},
     },
 }
 
