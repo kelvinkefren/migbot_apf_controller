@@ -14,16 +14,16 @@ OBSTACLE_RADIUS = [1, 1, 1, 9, 7]  # Raios dos obstáculos
 TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist dos modelos
 
 # Posição e velocidade iniciais do robô
-INITIAL_ROBOT_POSE = np.array([-20.1,30])  # Posição inicial do robô
+INITIAL_ROBOT_POSE = np.array([-0.1,30])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 
 # Definição de cenários
 SCENARIOS = {
     'scenario_0': {
-        'vegetation1_buoy': {'position': [10, 30], 'velocity': [-1, 0]},
-        'vegetation2_buoy': {'position': [300, 20], 'velocity': [0, 0]},
-        'vegetation3_buoy': {'position': [150, 60], 'velocity': [0, 0]},
-        'branche3_buoy': {'position': [150, 400], 'velocity': [0, -1]},
+        'vegetation1_buoy': {'position': [0, 20], 'velocity': [0, 0]},
+        'vegetation2_buoy': {'position': [0, 45], 'velocity': [0, 0]},
+        'vegetation3_buoy': {'position': [30, 30], 'velocity': [0, 0]},
+        'branche3_buoy': {'position': [-20, 30], 'velocity': [0, 0]},
     },
 }
 
@@ -51,6 +51,8 @@ class GazeboScenario:
 
         # Subscritor para o tópico de estados dos modelos do Gazebo
         self.model_state_sub = rospy.Subscriber(TOPIC_SUB, ModelStates, self.model_states_callback)
+        # Subscriber to the /obstacles topic
+        rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
 
         # Publicadores para os tópicos de estados do robô e obstáculos
         self.robot_pub = rospy.Publisher('/scenario/input_robot', RobotState, queue_size=10)
@@ -158,6 +160,8 @@ def set_obstacle_position_and_velocity(name, position, velocity):
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: %s" % e)
         return False
+    
+    
 
 
 if __name__ == '__main__':
