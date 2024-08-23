@@ -9,7 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf  # Add tf since you're using it for transformations
   dynamic_obstacle_avoidance  # Add this since you're using RobotState from this package
-  obstacle_detector
 )
 
 ## Declare a catkin package

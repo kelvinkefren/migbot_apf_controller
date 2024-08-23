@@ -8,7 +8,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>geometry_msgsobstacle_detector</build_depend>
+  <build_depend>geometry_msgs</build_depend>
   <build_depend>obstacle_detector</build_depend>
   <build_depend>nav_msgs</build_depend>
   <build_depend>rospy</build_depend>
@@ -17,8 +17,7 @@
   <build_depend>dynamic_obstacle_avoidance</build_depend>
 
 
-  <exec_depend>obstacle_detector</exec_depend>
-  <exec_depend>geometry_msgsobstacle_detector</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
