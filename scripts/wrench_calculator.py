@@ -20,7 +20,10 @@ class ForceCalculator:
         self.MIN_TORQUE_WRENCH = rospy.get_param('~min_torque_wrench', -0.1)
         self.MAX_LINEAR_SPEED = rospy.get_param('~max_linear_speed', 1.0)
         self.TOLERANCE = rospy.get_param('~tolerance', 5.0)
-        self.RELATIVE_DISTANCE = rospy.get_param('~relative_distance', 2.5)  
+        self.RELATIVE_DISTANCE = rospy.get_param('~relative_distance', 2.5)
+        
+        if self.RELATIVE_DISTANCE < 1:
+            self.RELATIVE_DISTANCE = 1
 
 
         # Publishers
@@ -109,13 +112,13 @@ class ForceCalculator:
             None
         n_factor = 4
         # Calcular o efeito angular (1 próximo de 0 ou 180 graus, 0 próximo de 90 graus)
-        angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n_factor
+        self.angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n_factor
 
-        rospy.loginfo(f"angular_effect : {angular_effect}")
+        rospy.loginfo(f"angular_effect : {self.angular_effect}")
         # # rospy.loginfo("**************************************************************************")
         # # rospy.loginfo(f"FORCE : {force}")
         # wrench_msg.force.x = min(self.MAX_WRENCH, abs(force.x)) * (1 if force.x >= 0 else 0)
-        wrench_msg.force.x = angular_effect * min(self.MAX_WRENCH, abs(force.x))
+        wrench_msg.force.x = self.angular_effect * min(self.MAX_WRENCH, abs(force.x))
         wrench_msg.torque.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
         twist_msg.linear.x = min(self.MAX_LINEAR_SPEED, force.x)
         twist_msg.angular.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
@@ -129,10 +132,13 @@ class ForceCalculator:
         self.publish_positions(force, yaw)
 
     def publish_positions(self, force, yaw):
+        # Ajustar o efeito angular para que o mínimo seja 1 e o máximo RELATIVE_DISTANCE
+        adjusted_effect = 1 + (self.RELATIVE_DISTANCE - 1) * self.angular_effect
+
         # Calcular a posição relativa
         relative_position = Vector3()
-        relative_position.x = self.RELATIVE_DISTANCE * math.cos(math.radians(math.degrees(np.arctan2(force.y, force.x))))
-        relative_position.y = self.RELATIVE_DISTANCE * math.sin(math.radians(math.degrees(np.arctan2(force.y, force.x))))
+        relative_position.x = adjusted_effect * math.cos(math.radians(math.degrees(np.arctan2(force.y, force.x))))
+        relative_position.y = adjusted_effect * math.sin(math.radians(math.degrees(np.arctan2(force.y, force.x))))
         relative_position.z = 0.0  # Supondo movimento no plano XY
 
         # Publicar a posição relativa
