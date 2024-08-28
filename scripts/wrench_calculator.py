@@ -102,9 +102,9 @@ class ForceCalculator:
             torque.z = 0.0
         else:
             None
-
+        n = 4
         # Calcular o efeito angular (1 próximo de 0 ou 180 graus, 0 próximo de 90 graus)
-        angular_effect = abs(math.cos(math.radians(angular_difference_degree)))
+        angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n
 
         rospy.loginfo(f"angular_effect : {angular_effect}")
         # # rospy.loginfo("**************************************************************************")
