@@ -20,10 +20,15 @@ class ForceCalculator:
         self.MIN_TORQUE_WRENCH = rospy.get_param('~min_torque_wrench', -0.1)
         self.MAX_LINEAR_SPEED = rospy.get_param('~max_linear_speed', 1.0)
         self.TOLERANCE = rospy.get_param('~tolerance', 5.0)
+        self.RELATIVE_DISTANCE = rospy.get_param('~relative_distance', 2.5)  
+
 
         # Publishers
         self.twist_pub = rospy.Publisher('/apfm/cmd_vel', Twist, queue_size=10)
-        self.wrench_pub = rospy.Publisher('/apfm/wrench', Wrench, queue_size=10)
+        self.wrench_pub = rospy.Publisher('/apfm/wrench', Wrench, queue_size=10)        
+        self.relative_position_pub = rospy.Publisher('/apfm/relative_position', Vector3, queue_size=10)
+        self.odometry_position_pub = rospy.Publisher('/apfm/odometry_position', Vector3, queue_size=10)
+
 
         rospy.Timer(rospy.Duration(0.1), self.publisher_wrench)
 
@@ -102,9 +107,9 @@ class ForceCalculator:
             torque.z = 0.0
         else:
             None
-        n = 4
+        n_factor = 4
         # Calcular o efeito angular (1 próximo de 0 ou 180 graus, 0 próximo de 90 graus)
-        angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n
+        angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n_factor
 
         rospy.loginfo(f"angular_effect : {angular_effect}")
         # # rospy.loginfo("**************************************************************************")
@@ -116,13 +121,31 @@ class ForceCalculator:
         twist_msg.angular.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
         
         # rospy.loginfo(f"Distance to goal: {distance_to_goal}")
-
-
+        
         self.twist_pub.publish(twist_msg)
         self.wrench_pub.publish(wrench_msg)
 
-        # rospy.loginfo(f"Published wrench: {wrench_msg}")
-        # rospy.loginfo(f"Published twist: {twist_msg}")
+        # Calcular e publicar as posições relativas e absolutas
+        self.publish_positions(force, yaw)
+
+    def publish_positions(self, force, yaw):
+        # Calcular a posição relativa
+        relative_position = Vector3()
+        relative_position.x = self.RELATIVE_DISTANCE * math.cos(math.radians(math.degrees(np.arctan2(force.y, force.x))))
+        relative_position.y = self.RELATIVE_DISTANCE * math.sin(math.radians(math.degrees(np.arctan2(force.y, force.x))))
+        relative_position.z = 0.0  # Supondo movimento no plano XY
+
+        # Publicar a posição relativa
+        self.relative_position_pub.publish(relative_position)
+
+        # Calcular a posição odométrica global
+        odometry_position = Vector3()
+        odometry_position.x = self.robot_position.x + (relative_position.x * math.cos(yaw) - relative_position.y * math.sin(yaw))
+        odometry_position.y = self.robot_position.y + (relative_position.x * math.sin(yaw) + relative_position.y * math.cos(yaw))
+        odometry_position.z = self.robot_position.z  # Assumindo que z permanece o mesmo
+
+        # Publicar a posição global
+        self.odometry_position_pub.publish(odometry_position)
 
 if __name__ == '__main__':
     try:
