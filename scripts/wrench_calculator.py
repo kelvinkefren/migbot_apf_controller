@@ -96,24 +96,24 @@ class ForceCalculator:
         wrench_msg = Wrench()
         twist_msg = Twist()
         
-        if force.x < 0:
-            force.x = 0
-        else:   
-            None
-            
+
         if self.distance_to_goal <= self.TOLERANCE:
             force.x = 0.0
             torque.z = 0.0
         else:
             None
-            
+
+        # Calcular o efeito angular (1 próximo de 0 ou 180 graus, 0 próximo de 90 graus)
+        angular_effect = abs(math.cos(math.radians(angular_difference_degree)))
+
+        rospy.loginfo(f"angular_effect : {angular_effect}")
         # # rospy.loginfo("**************************************************************************")
         # # rospy.loginfo(f"FORCE : {force}")
-        wrench_msg.force.x = min(self.MAX_WRENCH, force.x)
+        # wrench_msg.force.x = min(self.MAX_WRENCH, abs(force.x)) * (1 if force.x >= 0 else 0)
+        wrench_msg.force.x = angular_effect * min(self.MAX_WRENCH, abs(force.x))
         wrench_msg.torque.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
         twist_msg.linear.x = min(self.MAX_LINEAR_SPEED, force.x)
         twist_msg.angular.z = max(self.MIN_TORQUE_WRENCH, min(self.MAX_TORQUE_WRENCH, torque.z))
-
         
         # rospy.loginfo(f"Distance to goal: {distance_to_goal}")
 

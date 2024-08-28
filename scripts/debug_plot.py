@@ -94,8 +94,8 @@ class SimplePlot:
         if self.goal_position is not None:
             self.ax.plot(self.goal_position[0], self.goal_position[1], 'kx', markersize=10, label="Goal")
 
-        self.ax.set_xlim(-0, 50)
-        self.ax.set_ylim(-0, 50)
+        self.ax.set_xlim(-20, 50)
+        self.ax.set_ylim(-20, 50)
         self.ax.set_xlabel('X')
         self.ax.set_ylabel('Y')
 

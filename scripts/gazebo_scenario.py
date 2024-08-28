@@ -40,7 +40,7 @@ class Obstacle:
 
 class GazeboScenario:
     def __init__(self):
-        rospy.init_node('migbot_controller')
+        rospy.init_node('gazebo_scenario')
         self.rotation = -60
         # Obter o nome do cenário a partir dos parâmetros ROS
         self.scenario_name = rospy.get_param('~scenario', 'scenario_0')
@@ -52,7 +52,7 @@ class GazeboScenario:
         # Subscritor para o tópico de estados dos modelos do Gazebo
         self.model_state_sub = rospy.Subscriber(TOPIC_SUB, ModelStates, self.model_states_callback)
         # Subscriber to the /obstacles topic
-        rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
+        rospy.Subscriber('/obstacles', ObstacleArray, self.obstacles_callback)
 
         # Publicadores para os tópicos de estados do robô e obstáculos
         self.robot_pub = rospy.Publisher('/scenario/input_robot', RobotState, queue_size=10)
@@ -62,14 +62,17 @@ class GazeboScenario:
         rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
         
         # Retrieve the robot domain radius parameter
-        self.robot_domain_radius = rospy.get_param('/apfm_obstacle_avoidance/robot_domain_radius', default=0.5)
-        
+        self.robot_domain_radius = rospy.get_param('/apfm_obstacle_avoidance/robot_domain_radius', 2)
+        rospy.loginfo(f"robot_domain_radius : {self.robot_domain_radius}")
         # Configurar as posições e velocidades iniciais com base no cenário
         self.set_initial_positions()
         
         # Timer to rotate velocities after 5 seconds
         rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
 
+    def obstacles_callback(self, data):
+        # Implement your logic here
+        pass
 
     def set_initial_positions(self):
         # Configura a posição inicial e a velocidade do robô
@@ -108,7 +111,6 @@ class GazeboScenario:
         ]
         self.obstacle_pub.publish(obstacle_array)
         
-    
     def rotate_obstacle_velocities(self, event):
         # Rotation matrix for 60 degrees clockwise
         angle_rad = np.radians(self.rotation)
@@ -161,9 +163,6 @@ def set_obstacle_position_and_velocity(name, position, velocity):
         rospy.logerr("Service call failed: %s" % e)
         return False
     
-    
-
-
 if __name__ == '__main__':
     try:
         GazeboScenario()
