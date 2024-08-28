@@ -23,7 +23,7 @@ SCENARIOS = {
         'vegetation1_buoy': {'position': [0, 20], 'velocity': [0, 0]},
         'vegetation2_buoy': {'position': [0, 45], 'velocity': [0, 0]},
         'vegetation3_buoy': {'position': [30, 30], 'velocity': [0, 0]},
-        'branche3_buoy': {'position': [-20, 30], 'velocity': [0, 0]},
+        'branche3_buoy': {'position': [-20, 30], 'velocity': [-1, 0]},
     },
 }
 
