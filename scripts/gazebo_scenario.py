@@ -9,22 +9,59 @@ from gazebo_msgs.msg import ModelState
 from dynamic_obstacle_avoidance.msg import RobotState, ObstacleState, ObstacleArray
 
 ROBOT_NAME = 'migbot'  # Nome do modelo do robô
-OBSTACLE_NAMES = ['vegetation1_buoy','vegetation2_buoy','vegetation3_buoy','branche3_buoy']  # Nomes dos obstáculos
-OBSTACLE_RADIUS = [1, 1, 1, 9, 7]  # Raios dos obstáculos
+OBSTACLE_NAMES = ['vegetation1_buoy','vegetation3_buoy','branche3_buoy','vegetation3_buoy_clone','vegetation3_buoy_clone_clone','vegetation3_buoy_clone_clone_clone','branche3_buoy_clone','trunk1_buoy','trunk3_buoy']  # Nomes dos obstáculos
+OBSTACLE_RADIUS = [1, 1, 1, 1, 1, 1, 1, 7, 7]  # Raios dos obstáculos
 TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist dos modelos
 
 # Posição e velocidade iniciais do robô
-INITIAL_ROBOT_POSE = np.array([-0.1,30])  # Posição inicial do robô
+INITIAL_ROBOT_POSE = np.array([10,10])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 
 # Definição de cenários
 SCENARIOS = {
     'scenario_0': {
-        'vegetation1_buoy': {'position': [0, 20], 'velocity': [0, 0]},
-        'vegetation2_buoy': {'position': [0, 45], 'velocity': [0, 0]},
+        # Exemplo simples de cenário com dois obstáculos
         'vegetation3_buoy': {'position': [30, 30], 'velocity': [0, 0]},
         'branche3_buoy': {'position': [-20, 30], 'velocity': [-1, 0]},
     },
+    'scenario_A': {
+        # Cenário A (Básico): Obst estático - SCENARIOS 1
+        'vegetation3_buoy': {'position': [40,40], 'velocity':[0,0]},
+    },
+    'scenario_HeadOn_1': {
+        # Head-On 1 - SCENARIOS 2
+        'vegetation3_buoy': {'position': [70,10], 'velocity':[-0.7,0.7]},
+    },
+    'scenario_HeadOn_2': {
+        # Head-On 2 - SCENARIOS 3
+        'vegetation3_buoy': {'position': [10,70], 'velocity':[0.7,-0.7]},
+    },
+    'scenario_Crossing_1': {
+        # Obstáculo pela direita- SCENARIOS 4
+        'vegetation3_buoy': {'position':[40,10], 'velocity':[0,0.8]},
+    },
+    'scenario_Crossing_2': {
+        # Obstáculo pela esquerda - SCENARIOS 5
+        'vegetation3_buoy': {'position':[40,40], 'velocity':[-0.6,-0.6]},
+    },
+    'scenario_Crossing_3': {
+        # Múltiplos obstáculos cruzando - SCENARIOS 6 
+        'vegetation3_buoy': {'position':[30,10], 'velocity':[0,0.7]},
+        'vegetation3_buoy_clone': {'position':[60,80], 'velocity':[0,-0.7]},
+    },
+    'scenario_C': {
+        # Cenário Congestionado - SCENARIOS 7 
+        'vegetation3_buoy': {'position':[20,20], 'velocity':[0,0]},
+        'vegetation3_buoy_clone': {'position':[30,35], 'velocity':[0,0]},
+        'vegetation3_buoy_clone_clone': {'position':[50,50], 'velocity':[0,0]},
+        'vegetation3_buoy_clone_clone_clone': {'position':[60,65], 'velocity':[0,0]},
+        'branche3_buoy': {'position':[40,20], 'velocity':[0,0.4]},
+        'branche3_buoy_clone': {'position':[25,50], 'velocity':[0.3,0]},
+    },
+    'scenario_D': {
+        # Cenário Emergência - SCENARIOS 8
+        'vegetation3_buoy': {'position':[40,40], 'velocity':[0,0]},
+    }
 }
 
 class Obstacle:
@@ -43,7 +80,7 @@ class GazeboScenario:
         rospy.init_node('gazebo_scenario')
         self.rotation = -60
         # Obter o nome do cenário a partir dos parâmetros ROS
-        self.scenario_name = rospy.get_param('~scenario', 'scenario_0')
+        self.scenario_name = rospy.get_param('~scenario', 'scenario_C')
 
         # Inicializar o robô e os obstáculos
         self.migbot = RobotState()
@@ -59,7 +96,7 @@ class GazeboScenario:
         self.obstacle_pub = rospy.Publisher('/scenario/input_obstacles', ObstacleArray, queue_size=10)
 
         # Timer to rotate velocities after 5 seconds
-        rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
+        # rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
         
         # Retrieve the robot domain radius parameter
         self.robot_domain_radius = rospy.get_param('/apfm_obstacle_avoidance/robot_domain_radius', 2)
@@ -68,7 +105,7 @@ class GazeboScenario:
         self.set_initial_positions()
         
         # Timer to rotate velocities after 5 seconds
-        rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
+        # rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
 
     def obstacles_callback(self, data):
         # Implement your logic here

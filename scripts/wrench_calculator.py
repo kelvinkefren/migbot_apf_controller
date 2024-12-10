@@ -16,8 +16,8 @@ class ForceCalculator:
         self.goal_position = Vector3()
         # Constants
         self.MAX_WRENCH = rospy.get_param('~max_wrench', 0.2)
-        self.MAX_TORQUE_WRENCH = rospy.get_param('~max_torque_wrench', 0.1)
-        self.MIN_TORQUE_WRENCH = rospy.get_param('~min_torque_wrench', -0.1)
+        self.MAX_TORQUE_WRENCH = rospy.get_param('~max_torque_wrench', 0.2)
+        self.MIN_TORQUE_WRENCH = rospy.get_param('~min_torque_wrench', -0.2)
         self.MAX_LINEAR_SPEED = rospy.get_param('~max_linear_speed', 1.0)
         self.TOLERANCE = rospy.get_param('~tolerance', 5.0)
         self.RELATIVE_DISTANCE = rospy.get_param('~relative_distance', 2.5)

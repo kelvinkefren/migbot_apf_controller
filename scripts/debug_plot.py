@@ -21,8 +21,8 @@ class SimplePlot:
         # Initialize plot
         plt.ion()  # Turn on interactive mode
         self.fig, self.ax = plt.subplots()
-        self.ax.set_xlim(-0, 50)
-        self.ax.set_ylim(-0, 50)
+        self.ax.set_xlim(-0, 90)
+        self.ax.set_ylim(-0, 90)
         self.ax.set_xlabel('X')
         self.ax.set_ylabel('Y')
         plt.show()
