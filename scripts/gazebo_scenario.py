@@ -9,45 +9,19 @@ from gazebo_msgs.msg import ModelState
 from dynamic_obstacle_avoidance.msg import RobotState, ObstacleState, ObstacleArray
 
 ROBOT_NAME = 'migbot'  # Nome do modelo do robô
-OBSTACLE_NAMES = ['vegetation1_buoy','vegetation3_buoy','branche3_buoy','vegetation3_buoy_clone','vegetation3_buoy_clone_clone','vegetation3_buoy_clone_clone_clone','branche3_buoy_clone','trunk1_buoy','trunk3_buoy']  # Nomes dos obstáculos
+OBSTACLE_NAMES = ['vegetation1_buoy','vegetation3_buoy','branche3_buoy','vegetation3_buoy_clone','vegetation3_buoy_clone_clone','vegetation3_buoy_clone_clone_clone','branche3_buoy_clone_clone_clone_clone','trunk1_buoy','trunk1_buoy_clone']  # Nomes dos obstáculos
 OBSTACLE_RADIUS = [1, 1, 1, 1, 1, 1, 1, 7, 7]  # Raios dos obstáculos
 TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist dos modelos
 
 # Posição e velocidade iniciais do robô
-INITIAL_ROBOT_POSE = np.array([10,10])  # Posição inicial do robô
+INITIAL_ROBOT_POSE = np.array([0,0])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
 
 # Definição de cenários
 SCENARIOS = {
-    'scenario_0': {
-        # Exemplo simples de cenário com dois obstáculos
-        'vegetation3_buoy': {'position': [30, 30], 'velocity': [0, 0]},
-        'branche3_buoy': {'position': [-20, 30], 'velocity': [-1, 0]},
-    },
     'scenario_A': {
         # Cenário A (Básico): Obst estático - SCENARIOS 1
         'vegetation3_buoy': {'position': [40,40], 'velocity':[0,0]},
-    },
-    'scenario_HeadOn_1': {
-        # Head-On 1 - SCENARIOS 2
-        'vegetation3_buoy': {'position': [70,10], 'velocity':[-0.7,0.7]},
-    },
-    'scenario_HeadOn_2': {
-        # Head-On 2 - SCENARIOS 3
-        'vegetation3_buoy': {'position': [10,70], 'velocity':[0.7,-0.7]},
-    },
-    'scenario_Crossing_1': {
-        # Obstáculo pela direita- SCENARIOS 4
-        'vegetation3_buoy': {'position':[40,10], 'velocity':[0,0.8]},
-    },
-    'scenario_Crossing_2': {
-        # Obstáculo pela esquerda - SCENARIOS 5
-        'vegetation3_buoy': {'position':[40,40], 'velocity':[-0.6,-0.6]},
-    },
-    'scenario_Crossing_3': {
-        # Múltiplos obstáculos cruzando - SCENARIOS 6 
-        'vegetation3_buoy': {'position':[30,10], 'velocity':[0,0.7]},
-        'vegetation3_buoy_clone': {'position':[60,80], 'velocity':[0,-0.7]},
     },
     'scenario_C': {
         # Cenário Congestionado - SCENARIOS 7 
@@ -58,9 +32,37 @@ SCENARIOS = {
         'branche3_buoy': {'position':[40,20], 'velocity':[0,0.4]},
         'branche3_buoy_clone': {'position':[25,50], 'velocity':[0.3,0]},
     },
-    'scenario_D': {
-        # Cenário Emergência - SCENARIOS 8
-        'vegetation3_buoy': {'position':[40,40], 'velocity':[0,0]},
+    # Head-On Scenarios
+    'scenario_headon_1': {'vegetation3_buoy': {'position': [10, -2.5], 'velocity': [0, 0.25]}},
+    'scenario_headon_2': {'vegetation3_buoy': {'position': [15, -4], 'velocity': [-0.5, 0.4]}},
+    'scenario_headon_3': {'vegetation3_buoy': {'position': [15, 4], 'velocity': [-0.5, -0.4]}},
+    'scenario_headon_4': {'vegetation3_buoy': {'position': [20, 20], 'velocity': [-1.0, 0.0]}},
+    'scenario_headon_5': {'vegetation3_buoy': {'position': [8, 2], 'velocity': [0.2, -0.2]}},
+    'scenario_headon_6': {'vegetation3_buoy': {'position': [8, -2], 'velocity': [0.2, 0.2]}},
+    # Crossing A Scenarios
+    'scenario_crossingA_1': {'vegetation3_buoy': {'position': [14, -5.0], 'velocity': [-0.4, 0.5]}},
+    'scenario_crossingA_2': {'vegetation3_buoy': {'position': [10.0, -10.0], 'velocity': [0.0, 1.0]}},
+    'scenario_crossingA_3': {'vegetation3_buoy': {'position': [7.0, -4.0], 'velocity': [0.3, 0.4]}},
+    'scenario_crossingA_4': {'vegetation3_buoy': {'position': [4.0, -6.5], 'velocity': [0.6, 0.7]}},
+    'scenario_crossingA_5': {'vegetation3_buoy': {'position': [1.0, -3.5], 'velocity': [0.9, -0.37]}},
+    'scenario_crossingA_6': {'vegetation3_buoy': {'position': [-2.0, -5.4], 'velocity': [1.22, -0.55]}},
+    # Crossing B Scenarios
+    'scenario_crossingB_1': {'vegetation3_buoy': {'position': [14, 5.0], 'velocity': [-0.4, -0.5]}},
+    'scenario_crossingB_2': {'vegetation3_buoy': {'position': [10.0, 10.0], 'velocity': [0.0, -1.0]}},
+    'scenario_crossingB_3': {'vegetation3_buoy': {'position': [7.0, 4.0], 'velocity': [0.3, -0.4]}},
+    'scenario_crossingB_4': {'vegetation3_buoy': {'position': [4.0, 6.5], 'velocity': [0.6, -0.7]}},
+    'scenario_crossingB_5': {'vegetation3_buoy': {'position': [1.0, 3.5], 'velocity': [0.9, 0.37]}},
+    'scenario_crossingB_6': {'vegetation3_buoy': {'position': [-2.0, 5.4], 'velocity': [1.22, 0.55]}},
+
+    #artigo:
+    'scenario_from_table': {
+        # Obstacles as per the table
+        'vegetation3_buoy': {'position': [7.8, 2.2], 'velocity': [0, 0]},
+        'vegetation3_buoy_clone': {'position': [6.8, 4.9], 'velocity': [0, 0]},
+        'vegetation3_buoy_clone_clone': {'position': [7.0, 0], 'velocity': [-8, 8]},
+        'vegetation3_buoy_clone_clone_clone': {'position': [7.5, 7], 'velocity': [-8, -8]},
+        'vegetation3_buoy_clone_clone_clone_clone': {'position': [6, 8], 'velocity': [0, -3]},
+        'vegetation3_buoy_trunk1_buoy': {'position': [4, 8], 'velocity': [2.8, -1.6]},
     }
 }
 
@@ -80,7 +82,7 @@ class GazeboScenario:
         rospy.init_node('gazebo_scenario')
         self.rotation = -60
         # Obter o nome do cenário a partir dos parâmetros ROS
-        self.scenario_name = rospy.get_param('~scenario', 'scenario_C')
+        self.scenario_name = rospy.get_param('~scenario', 'scenario_headon_1')
 
         # Inicializar o robô e os obstáculos
         self.migbot = RobotState()
