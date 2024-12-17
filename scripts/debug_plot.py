@@ -3,7 +3,7 @@
 import rospy
 import matplotlib.pyplot as plt
 import numpy as np
-from dynamic_obstacle_avoidance.msg import RobotState, ObstacleArray
+from dynamic_obstacle_avoidance.msg import RobotState, ObstacleArray, CustomInfo
 from geometry_msgs.msg import Vector3
 from tf.transformations import euler_from_quaternion
 
@@ -17,6 +17,12 @@ class SimplePlot:
         self.force_vector = None
         self.goal_position = None
         self.obstacles = []
+        self.vector_to_obstacle = None
+        self.relative_speed_vector = None
+        self.collision_avoidance_radius = None
+        self.center_to_center_safe_distance = None
+        self.action_type = "N/A"  # Default value for action type
+        self.avoidance_type = "N/A"  # Default value for avoidance type
 
         # Initialize plot
         plt.ion()  # Turn on interactive mode
@@ -32,6 +38,8 @@ class SimplePlot:
         self.obstacle_sub = rospy.Subscriber('/scenario/output_obstacles', ObstacleArray, self.obstacle_callback)
         self.force_sub = rospy.Subscriber('/apfm/total_force', Vector3, self.force_callback)
         self.goal_sub = rospy.Subscriber('/scenario/goal', Vector3, self.goal_callback)
+        self.custom_info_sub = rospy.Subscriber('/obstacle_avoidance/custom_info', CustomInfo, self.custom_info_callback)
+
 
     def robot_callback(self, msg):
         self.robot_position = np.array([msg.position.x, msg.position.y])
@@ -49,12 +57,53 @@ class SimplePlot:
     def goal_callback(self, msg):
         self.goal_position = np.array([msg.x, msg.y])
 
+    def custom_info_callback(self, msg):
+        # Extrair os vetores e o raio de evasão de colisão
+        if len(msg.vector_to_obstacle) >= 2:
+            self.vector_to_obstacle = np.array(msg.vector_to_obstacle[:2])
+        else:
+            self.vector_to_obstacle = np.array([0.0, 0.0])
+        
+        self.relative_speed_vector = np.array(msg.relative_speed_vector[:2])
+        self.collision_avoidance_radius = msg.CR
+        self.center_to_center_safe_distance = msg.dm
+        # Armazenar action_type e avoidance_type
+        self.action_type = msg.action_type
+        self.avoidance_type = msg.avoidance_type
+
     def update_plot(self):
         self.ax.clear()
 
+        if self.vector_to_obstacle is not None and np.linalg.norm(self.vector_to_obstacle) > 1e-8:
+            self.ax.arrow(self.robot_position[0], self.robot_position[1],
+                        self.vector_to_obstacle[0], self.vector_to_obstacle[1],
+                        head_width=1, head_length=1, fc='m', ec='m', label="Vector to Obstacle")
+            
+        if self.relative_speed_vector is not None and np.linalg.norm(self.relative_speed_vector) > 1e-8:
+            self.ax.arrow(self.robot_position[0], self.robot_position[1],
+                        self.relative_speed_vector[0], self.relative_speed_vector[1],
+                        head_width=1, head_length=1, fc='c', ec='c', label="Relative Speed Vector")
+
+        if self.collision_avoidance_radius is not None:
+            circle = plt.Circle((self.robot_position[0], self.robot_position[1]),
+                                self.collision_avoidance_radius,
+                                color='y', fill=False, linestyle='--', label="Collision Avoidance Radius")
+            self.ax.add_patch(circle)
+
+        if self.center_to_center_safe_distance is not None:
+                    circle = plt.Circle((self.robot_position[0]+self.vector_to_obstacle[0], self.robot_position[1]+self.vector_to_obstacle[1]),
+                                        self.center_to_center_safe_distance,
+                                        color='r', fill=False, linestyle='--', label="safety margin radius")
+                    self.ax.add_patch(circle)
+        
         # Plot robot position
         if self.robot_position is not None:
             self.ax.plot(self.robot_position[0], self.robot_position[1], 'bo', label="Robot")
+
+            # Adicionar texto com action_type e avoidance_type
+            self.ax.text(self.robot_position[0] + 2, self.robot_position[1] + 2,
+                         f"Action: {self.action_type}\nAvoidance: {self.avoidance_type}",
+                         fontsize=10, color='black', bbox=dict(facecolor='white', alpha=0.5))
 
             # Plot the force vector
             if self.force_vector is not None:

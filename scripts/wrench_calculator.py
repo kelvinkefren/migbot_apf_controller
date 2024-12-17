@@ -4,16 +4,18 @@ import rospy
 import math
 from geometry_msgs.msg import Wrench, Twist, Vector3
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Bool
 from dynamic_obstacle_avoidance.msg import RobotState, CustomInfo
 from tf.transformations import euler_from_quaternion
 import numpy as np
+from geometry_msgs.msg import Quaternion
+from std_msgs.msg import Float64
 
 class ForceCalculator:
     def __init__(self):
         rospy.init_node('force_calculator')
         
-        # Initialize goal_position with a default value2
-        self.goal_position = Vector3()
+     
         # Constants
         self.MAX_WRENCH = rospy.get_param('~max_wrench', 0.2)
         self.MAX_TORQUE_WRENCH = rospy.get_param('~max_torque_wrench', 0.2)
@@ -31,23 +33,32 @@ class ForceCalculator:
         self.wrench_pub = rospy.Publisher('/apfm/wrench', Wrench, queue_size=10)        
         self.relative_position_pub = rospy.Publisher('/apfm/relative_position', Vector3, queue_size=10)
         self.odometry_position_pub = rospy.Publisher('/apfm/odometry_position', Vector3, queue_size=10)
+        self.reached_goal_pub = rospy.Publisher('/apfm/reached_goal', Bool, queue_size=10)
 
 
-        rospy.Timer(rospy.Duration(0.1), self.publisher_wrench)
+        rospy.Timer(rospy.Duration(0.05), self.publisher_wrench)
 
         # Subscribers
         self.force_sub = rospy.Subscriber('/apfm/total_force', Vector3, self.force_callback)
         self.robot_sub = rospy.Subscriber('/scenario/output_robot', RobotState, self.robot_callback)
         self.goal_sub = rospy.Subscriber('/scenario/goal', Vector3, self.goal_callback)
-        self.avoidance_info = rospy.Subscriber('/obstacle_avoidance/custom_info',CustomInfo,self.info_callback)
+        self.distance_to_goal_sub = rospy.Subscriber('/obstacle_avoidance/distance_to_goal',Float64,self.get_distance_callback)
 
         # Initialize variables
         self.current_force = Vector3()
         self.distance_to_goal = 0.0
 
-    def info_callback(self,msg):
-        self.distance_to_goal = msg.distance_to_goal
-        
+        # Inicialize com valores padrão
+        self.robot_orientation = Quaternion()  # Inicializa como Quaternion
+        self.robot_position = Vector3()
+        # Initialize goal_position with a default value
+        self.goal_position = Vector3()
+
+        self.verificacao = False
+
+    def get_distance_callback(self,msg):
+        self.distance_to_goal = msg.data  
+
     def force_callback(self, msg):        
         self.current_force = msg
         # rospy.loginfo(f"Received force: {msg}, type: {type(msg)}")
@@ -106,10 +117,17 @@ class ForceCalculator:
         
 
         if self.distance_to_goal <= self.TOLERANCE:
+            if self.verificacao == False:
+                self.reached_goal_pub.publish(True)
+                self.verificacao = True
             force.x = 0.0
             torque.z = 0.0
         else:
+            if self.verificacao == True:
+                self.reached_goal_pub.publish(False)
+                self.verificacao = False
             None
+            
         n_factor = 4
         # Calcular o efeito angular (1 próximo de 0 ou 180 graus, 0 próximo de 90 graus)
         self.angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n_factor
