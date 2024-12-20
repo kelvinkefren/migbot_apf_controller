@@ -2,6 +2,7 @@
 
 import rospy
 from std_msgs.msg import Bool
+import threading
 
 class ScenarioManager:
     def __init__(self):
@@ -9,21 +10,38 @@ class ScenarioManager:
         rospy.init_node('scenario_manager', anonymous=True)
 
         # Parâmetros iniciais
-        self.current_scenario = 1
-        self.max_scenarios = 40
+        self.current_scenario = 15
+        self.max_scenarios = 21
+
+        # Flags de controle
+        self.scenario_changing = False
+        self.in_collision = False
+        self.lock = threading.Lock()
 
         # Define o cenário inicial
         self.set_scenario_parameter(self.current_scenario)
 
         rospy.loginfo(f"Scenario Manager iniciado com {self.get_current_scenario_name()}")
 
-        # Subscriber para o tópico /apfm/reached_goal
+        # Subscribers
         self.reached_goal_sub = rospy.Subscriber('/apfm/reached_goal', Bool, self.goal_callback)
+        self.colisao_sub = rospy.Subscriber('/obstacle_avoidance/collision', Bool, self.colisao_callback)
 
     def get_current_scenario_name(self):
         """
         Retorna o nome do cenário atual baseado no número do cenário.
         """
+        simulador = 2
+        
+        if simulador==1:
+            return f"scenario_teste_{self.current_scenario}"
+        
+        if simulador==2:
+            if self.current_scenario > 14:
+                rospy.set_param('/gazebo_scenario/change_velocity', True)
+            else:
+                rospy.set_param('/gazebo_scenario/change_velocity', False)
+            return f"sceinario_dissertacao_{self.current_scenario}"
         return f"scenario_teste_{self.current_scenario}"
 
     def set_scenario_parameter(self, scenario_number):
@@ -37,27 +55,69 @@ class ScenarioManager:
     def goal_callback(self, msg):
         """
         Callback chamado quando uma mensagem é recebida no tópico /apfm/reached_goal.
-        Se msg.data for True, incrementa o cenário e define o novo parâmetro.
+        Se msg.data for True e não houver uma mudança de cenário em progresso, incrementa o cenário e define o novo parâmetro.
         """
         if msg.data:
-            rospy.loginfo("Objetivo alcançado. Preparando para avançar para o próximo cenário.")
-            self.advance_scenario()
+            with self.lock:
+                if not self.scenario_changing:
+                    rospy.loginfo("Objetivo alcançado. Preparando para avançar para o próximo cenário.")
+                    threading.Thread(target=self.advance_scenario).start()
+
+    def colisao_callback(self, msg):
+        """
+        Callback chamado quando uma mensagem é recebida no tópico /obstacle_avoidance/collision.
+        Trata colisões detectadas.
+        """
+        with self.lock:
+            if msg.data:
+                if not self.in_collision:
+                    rospy.logwarn("Colisão detectada! Iniciando tratamento da colisão.")
+                    self.in_collision = True
+                    if not self.scenario_changing:
+                        threading.Thread(target=self.handle_collision).start()
+            else:
+                if self.in_collision:
+                    rospy.loginfo("Colisão resolvida.")
+                    self.in_collision = False
+
+    def handle_collision(self):
+        """
+        Trata a colisão detectada. Avança para o próximo cenário.
+        """
+        with self.lock:
+            self.scenario_changing = True
+        rospy.loginfo("Tratando colisão. Avançando para o próximo cenário.")
+        
+        if self.current_scenario < self.max_scenarios:
+            self.current_scenario += 1
+            self.set_scenario_parameter(self.current_scenario)
+            rospy.loginfo(f"Cenário avançado para {self.get_current_scenario_name()} após colisão.")
+        else:
+            rospy.loginfo("Todos os cenários foram executados. Encerrando o Scenario Manager.")
+            rospy.signal_shutdown("Fim dos cenários.")
+        
+        rospy.sleep(3)  # Aguarda 3 segundos para permitir o carregamento do cenário
+        
+        with self.lock:
+            self.scenario_changing = False
 
     def advance_scenario(self):
         """
         Avança para o próximo cenário, definindo o novo parâmetro ROS.
         Aguarda 3 segundos após definir o parâmetro para permitir o carregamento do novo cenário.
         """
+        with self.lock:
+            self.scenario_changing = True
         if self.current_scenario < self.max_scenarios:
             self.current_scenario += 1
             self.set_scenario_parameter(self.current_scenario)
             rospy.loginfo(f"Avançado para {self.get_current_scenario_name()}")
-            
-            # Aguarda 3 segundos para permitir o carregamento do novo cenário
-            rospy.sleep(3)
+            rospy.sleep(3)  # Aguarda 3 segundos para permitir o carregamento do novo cenário
         else:
             rospy.loginfo("Todos os cenários foram executados. Encerrando o Scenario Manager.")
             rospy.signal_shutdown("Fim dos cenários.")
+        with self.lock:
+            self.scenario_changing = False
 
 if __name__ == '__main__':
     try:

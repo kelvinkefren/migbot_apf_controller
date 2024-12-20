@@ -132,7 +132,7 @@ class ForceCalculator:
         # Calcular o efeito angular (1 próximo de 0 ou 180 graus, 0 próximo de 90 graus)
         self.angular_effect = abs(math.cos(math.radians(angular_difference_degree)))**n_factor
 
-        rospy.loginfo(f"angular_effect : {self.angular_effect}")
+        # rospy.loginfo(f"angular_effect : {self.angular_effect}")
         # # rospy.loginfo("**************************************************************************")
         # # rospy.loginfo(f"FORCE : {force}")
         # wrench_msg.force.x = min(self.MAX_WRENCH, abs(force.x)) * (1 if force.x >= 0 else 0)

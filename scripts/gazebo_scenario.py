@@ -8,15 +8,21 @@ from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.msg import ModelState
 from std_msgs.msg import Bool
 from dynamic_obstacle_avoidance.msg import RobotState, ObstacleState, ObstacleArray
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 ROBOT_NAME = 'migbot'  # Nome do modelo do robô
-OBSTACLE_NAMES = ['vegetation1_buoy','vegetation3_buoy','branche3_buoy','vegetation3_buoy_clone','vegetation3_buoy_clone_clone','vegetation3_buoy_clone_clone_clone','branche3_buoy_clone_clone_clone_clone','trunk1_buoy','trunk1_buoy_clone','branche1_buoy']  # Nomes dos obstáculos
+OBSTACLE_NAMES = [
+    'vegetation1_buoy','vegetation3_buoy','branche3_buoy',
+    'vegetation3_buoy_clone','vegetation3_buoy_clone_clone','vegetation3_buoy_clone_clone_clone',
+    'branche3_buoy_clone_clone_clone_clone','trunk1_buoy','trunk1_buoy_clone','branche1_buoy'
+]  # Nomes dos obstáculos
 OBSTACLE_RADIUS = [1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.15, 3.15, 4.4]  # Raios dos obstáculos
 TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist dos modelos
 
 # Posição e velocidade iniciais do robô
 INITIAL_ROBOT_POSE = np.array([0,0])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
+INITIAL_ROBOT_ORIENTATION = 45 #45 GRAUS rotacionado para a esquerda (anti-horário)
 
 # Definição de cenários
 SCENARIOS = {
@@ -33,28 +39,32 @@ SCENARIOS = {
         'branche3_buoy': {'position':[40,20], 'velocity':[0,0.4]},
         'branche3_buoy_clone': {'position':[25,50], 'velocity':[0.3,0]},
     },
-    # Head-On Scenarios
-    'scenario_headon_1': {'vegetation3_buoy': {'position': [10, -2.5], 'velocity': [0, 0.25]}},
-    'scenario_headon_2': {'vegetation3_buoy': {'position': [15, -4], 'velocity': [-0.5, 0.4]}},
-    'scenario_headon_3': {'vegetation3_buoy': {'position': [15, 4], 'velocity': [-0.5, -0.4]}},
-    'scenario_headon_4': {'vegetation3_buoy': {'position': [20, 20], 'velocity': [-1.0, 0.0]}},
-    'scenario_headon_5': {'vegetation3_buoy': {'position': [8, 2], 'velocity': [0.2, -0.2]}},
-    'scenario_headon_6': {'vegetation3_buoy': {'position': [8, -2], 'velocity': [0.2, 0.2]}},
-    # Crossing A Scenarios
-    'scenario_crossingA_1': {'vegetation3_buoy': {'position': [14, -5.0], 'velocity': [-0.4, 0.5]}},
-    'scenario_crossingA_2': {'vegetation3_buoy': {'position': [10.0, -10.0], 'velocity': [0.0, 1.0]}},
-    'scenario_crossingA_3': {'vegetation3_buoy': {'position': [7.0, -4.0], 'velocity': [0.3, 0.4]}},
-    'scenario_crossingA_4': {'vegetation3_buoy': {'position': [4.0, -6.5], 'velocity': [0.6, 0.7]}},
-    'scenario_crossingA_5': {'vegetation3_buoy': {'position': [1.0, -3.5], 'velocity': [0.9, -0.37]}},
-    'scenario_crossingA_6': {'vegetation3_buoy': {'position': [-2.0, -5.4], 'velocity': [1.22, -0.55]}},
-    # Crossing B Scenarios
-    'scenario_crossingB_1': {'vegetation3_buoy': {'position': [14, 5.0], 'velocity': [-0.4, -0.5]}},
-    'scenario_crossingB_2': {'vegetation3_buoy': {'position': [10.0, 10.0], 'velocity': [0.0, -1.0]}},
-    'scenario_crossingB_3': {'vegetation3_buoy': {'position': [7.0, 4.0], 'velocity': [0.3, -0.4]}},
-    'scenario_crossingB_4': {'vegetation3_buoy': {'position': [4.0, 6.5], 'velocity': [0.6, -0.7]}},
-    'scenario_crossingB_5': {'vegetation3_buoy': {'position': [1.0, 3.5], 'velocity': [0.9, 0.37]}},
-    'scenario_crossingB_6': {'vegetation3_buoy': {'position': [-2.0, 5.4], 'velocity': [1.22, 0.55]}},
 
+    #dissertacao
+    'sceinario_dissertacao_1': {'vegetation3_buoy': {'position': [44, 44], 'velocity': [0, 0]}},
+    'sceinario_dissertacao_2': {'vegetation3_buoy': {'position': [60, 60], 'velocity': [-0.85, -0.85]}},
+    'sceinario_dissertacao_3': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}},
+    'sceinario_dissertacao_4': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [-0.2, 0.95]}},
+    'sceinario_dissertacao_5': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.85, 0]}},
+    'sceinario_dissertacao_6': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.95, -0.2]}},
+    'sceinario_dissertacao_7': {'vegetation3_buoy': {'position': [-10, -10], 'velocity': [1.1, 1.1]}},
+
+    'sceinario_dissertacao_8': {'trunk1_buoy': {'position': [44, 44], 'velocity': [0, 0]}, 'vegetation3_buoy': {'position': [200, 200], 'velocity': [0, 0]}},
+    'sceinario_dissertacao_9': {'trunk1_buoy': {'position': [60, 60], 'velocity': [-0.85, -0.85]}},
+    'sceinario_dissertacao_10': {'trunk1_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}},
+    'sceinario_dissertacao_11': {'trunk1_buoy': {'position': [50, 0], 'velocity': [0, 0.95]}},
+    'sceinario_dissertacao_12': {'trunk1_buoy': {'position': [0, 50], 'velocity': [0.85, 0]}},
+    'sceinario_dissertacao_13': {'trunk1_buoy': {'position': [0, 50], 'velocity': [0.95, -0.2]}},
+    'sceinario_dissertacao_14': {'trunk1_buoy': {'position': [-10, -10], 'velocity': [1.4, 1.4]}},
+
+    'sceinario_dissertacao_15': {'vegetation3_buoy': {'position': [44, 44], 'velocity': [0, 0]}, 'trunk1_buoy': {'position': [200, 200], 'velocity': [0, 0]}},
+    'sceinario_dissertacao_16': {'vegetation3_buoy': {'position': [60, 60], 'velocity': [-0.85, -0.85]}},
+    'sceinario_dissertacao_17': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}},
+    'sceinario_dissertacao_18': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [0, 0.95]}},
+    'sceinario_dissertacao_19': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.85, 0]}},
+    'sceinario_dissertacao_20': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.95, -0.2]}},
+    'sceinario_dissertacao_21': {'vegetation3_buoy': {'position': [-10, -10], 'velocity': [1.1, 1.1]}},
+    
     #artigo:
     'scenario_from_table': {
         # Obstacles as per the table
@@ -81,7 +91,7 @@ SCENARIOS = {
     'scenario_teste_12': {'vegetation3_buoy': {'position': [28.28, 28.28], 'velocity': [0.6, -0.75]}},
 
     'scenario_teste_13': {'vegetation3_buoy': {'position': [-6.94, -39.39], 'velocity': [1.3, 1.1]}},
-    'scenario_teste_14': {'vegetation3_buoy': {'position': [-6.94, -39.39], 'velocity': [1.6, 1.0]}},  #colisão
+    'scenario_teste_14': {'vegetation3_buoy': {'position': [-6.94, -39.39], 'velocity': [1.6, 1.0]}},  # colisão
     'scenario_teste_15': {'vegetation3_buoy': {'position': [-13.68, 37.59], 'velocity': [1.3, -1.1]}},
     'scenario_teste_16': {'vegetation3_buoy': {'position': [-13.68, 37.59], 'velocity': [1.6, -1]}},
 
@@ -113,9 +123,6 @@ SCENARIOS = {
     'scenario_teste_38': {'vegetation3_buoy': {'position': [-14.49, -3.88], 'velocity': [2.5, 0.7]}},
     'scenario_teste_39': {'vegetation3_buoy': {'position': [-14.49, 3.88], 'velocity': [2.5, -0.3]}},
     'scenario_teste_40': {'vegetation3_buoy': {'position': [-14.49, 3.88], 'velocity': [2.5, -0.7]}},
-
-
-    
 }
 
 class Obstacle:
@@ -138,6 +145,9 @@ class GazeboScenario:
         # Obter o nome do cenário a partir dos parâmetros ROS
         self.scenario_name = rospy.get_param('~scenario', 'scenario_teste_3')
 
+        # Inicializar change_velocity
+        self.change_velocity = rospy.get_param('~change_velocity', False)
+
         # Configurar um timer para verificar alterações no parâmetro
         rospy.Timer(rospy.Duration(1.0), self.check_for_parameter_update)
 
@@ -152,20 +162,20 @@ class GazeboScenario:
         self.robot_pub = rospy.Publisher('/scenario/input_robot', RobotState, queue_size=10)
         self.obstacle_pub = rospy.Publisher('/scenario/input_obstacles', ObstacleArray, queue_size=10)
 
-        # Timer to rotate velocities after 5 seconds
-        # rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
-        
         # Retrieve the robot domain radius parameter
         self.robot_domain_radius = rospy.get_param('/apfm_obstacle_avoidance/robot_domain_radius', 1.4)
         rospy.loginfo(f"robot_domain_radius : {self.robot_domain_radius}")
+
         # Configurar as posições e velocidades iniciais com base no cenário
         self.set_initial_positions()
-        
+
         # Subscritor para o tópico de estados dos modelos do Gazebo
         self.model_state_sub = rospy.Subscriber(TOPIC_SUB, ModelStates, self.model_states_callback)
-        # Timer to rotate velocities after 5 seconds
-        # rospy.Timer(rospy.Duration(5), self.rotate_obstacle_velocities, oneshot=True)
-        
+
+        # Se change_velocity estiver ativado, configurar um timer para 30 segundos
+        if self.change_velocity:
+            rospy.Timer(rospy.Duration(30.0), self.update_obstacle_velocities, oneshot=True)
+
     def check_for_parameter_update(self, event):
         new_scenario_name = rospy.get_param('~scenario', self.scenario_name)
         if new_scenario_name != self.scenario_name:
@@ -173,14 +183,32 @@ class GazeboScenario:
             self.scenario_name = new_scenario_name
             self.set_initial_positions()
 
+        # Verificar se change_velocity foi alterado
+        new_change_velocity = rospy.get_param('~change_velocity', self.change_velocity)
+        if new_change_velocity != self.change_velocity:
+            self.change_velocity = new_change_velocity
+            if self.change_velocity:
+                rospy.loginfo("change_velocity ativado. Aguardando 30 segundos para atualizar velocidades dos obstáculos.")
+                rospy.Timer(rospy.Duration(15.0), self.update_obstacle_velocities, oneshot=True)
+            else:
+                rospy.loginfo("change_velocity desativado.")
+
     def obstacles_callback(self, data):
         # Implement your logic here
         pass
 
     def set_initial_positions(self):
         # Configura a posição inicial e a velocidade do robô
-        set_robot_position_and_velocity(INITIAL_ROBOT_POSE, INITIAL_ROBOT_VELOCITY)
-        
+        success = set_robot_position_and_velocity(
+            INITIAL_ROBOT_POSE,
+            INITIAL_ROBOT_VELOCITY,
+            INITIAL_ROBOT_ORIENTATION
+        )
+        if success:
+            rospy.loginfo("Posição e orientação do robô definidas com sucesso.")
+        else:
+            rospy.logerr("Falha ao definir a posição e orientação do robô.")
+
         if self.scenario_name in SCENARIOS:
             scenario = SCENARIOS[self.scenario_name]
             for name, config in scenario.items():
@@ -236,7 +264,56 @@ class GazeboScenario:
             set_obstacle_position_and_velocity(ob.name, [ob.position.x, ob.position.y], rotated_velocity)
         rospy.loginfo("Obstacle velocities rotated by 60 degrees clockwise")
 
-def set_robot_position_and_velocity(position, velocity):
+    def update_obstacle_velocities(self, event):
+        rospy.loginfo("Atualizando velocidades dos obstáculos para apontar para o barco + 1 metro à frente.")
+
+        # Obter a posição e orientação atual do robô
+        robot_pose = self.migbot.position
+        robot_orientation = self.migbot.orientation
+
+        # Converter quaternion para ângulo de yaw
+        euler = euler_from_quaternion([
+            robot_orientation.x,
+            robot_orientation.y,
+            robot_orientation.z,
+            robot_orientation.w
+        ])
+        yaw = euler[2]
+
+        # Calcular o ponto 1 metro à frente da direção do robô
+        target_point_x = robot_pose.x + np.cos(yaw) * 5.0  # 5 metro à frente
+        target_point_y = robot_pose.y + np.sin(yaw) * 5.0
+        target_point = np.array([target_point_x, target_point_y])
+
+        rospy.loginfo(f"Ponto de destino (1m à frente): ({target_point_x}, {target_point_y})")
+
+        for ob in self.obstacles:
+            obstacle_position = np.array([ob.position.x, ob.position.y])
+            direction_vector = target_point - obstacle_position
+            distance = np.linalg.norm(direction_vector)
+            if distance == 0:
+                rospy.logwarn(f"Obstáculo {ob.name} está exatamente no ponto de destino. Mantendo velocidade atual.")
+                continue
+            normalized_vector = direction_vector / distance  # Vetor unitário
+            desired_speed = np.linalg.norm([ob.velocity.x, ob.velocity.y])  # Mantém a velocidade atual
+
+            # Se a velocidade atual for zero, definir uma velocidade padrão
+            if desired_speed == 0:
+                desired_speed = 1.0  # Por exemplo, 1 m/s
+
+            new_velocity = normalized_vector * desired_speed
+
+            ob.velocity.x = new_velocity[0]
+            ob.velocity.y = new_velocity[1]
+
+            # Atualizar a velocidade do obstáculo no Gazebo
+            set_obstacle_position_and_velocity(ob.name, [ob.position.x, ob.position.y], new_velocity)
+
+            rospy.loginfo(f"Obstáculo {ob.name} atualizado para nova velocidade: ({new_velocity[0]:.2f}, {new_velocity[1]:.2f})")
+
+        rospy.loginfo("Velocidades dos obstáculos atualizadas com sucesso.")
+
+def set_robot_position_and_velocity(position, velocity, orientation_degrees):
     rospy.wait_for_service('/gazebo/set_model_state')
     try:
         set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
@@ -246,7 +323,20 @@ def set_robot_position_and_velocity(position, velocity):
         state.pose.position.y = position[1]
         state.twist.linear.x = velocity[0]
         state.twist.linear.y = velocity[1]
-        state.pose.orientation = Quaternion(0, 0, 0, 1)  # Sem rotação
+        
+        # Converter a orientação de graus para radianos
+        orientation_radians = np.deg2rad(orientation_degrees)
+        
+        # Converter o ângulo de Euler (yaw) para quaternion
+        orientation_quat = quaternion_from_euler(0, 0, orientation_radians)
+        
+        # Definir a orientação na pose do robô
+        state.pose.orientation = Quaternion(
+            x=orientation_quat[0],
+            y=orientation_quat[1],
+            z=orientation_quat[2],
+            w=orientation_quat[3]
+        )
 
         response = set_state(state)
         return response.success
@@ -271,7 +361,7 @@ def set_obstacle_position_and_velocity(name, position, velocity):
     except rospy.ServiceException as e:
         rospy.logerr("Service call failed: %s" % e)
         return False
-    
+
 if __name__ == '__main__':
     try:
         GazeboScenario()
