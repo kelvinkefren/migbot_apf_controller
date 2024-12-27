@@ -28,13 +28,13 @@ class SimplePlot:
         plt.ion()  # Turn on interactive mode
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(-0, 90)
-        self.ax.set_ylim(-0, 90)
+        self.ax.set_ylim(-90, 90)
         self.ax.set_xlabel('X')
         self.ax.set_ylabel('Y')
         plt.show()
 
         # Subscribers
-        self.robot_sub = rospy.Subscriber('/scenario/output_robot', RobotState, self.robot_callback)
+        self.robot_sub = rospy.Subscriber('/scenario/input_robot', RobotState, self.robot_callback)
         self.obstacle_sub = rospy.Subscriber('/scenario/output_obstacles', ObstacleArray, self.obstacle_callback)
         self.force_sub = rospy.Subscriber('/apfm/total_force', Vector3, self.force_callback)
         self.goal_sub = rospy.Subscriber('/scenario/goal', Vector3, self.goal_callback)

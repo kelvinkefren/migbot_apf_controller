@@ -2,6 +2,7 @@
 
 import rospy
 from std_msgs.msg import Bool
+from std_msgs.msg import String
 import threading
 
 class ScenarioManager:
@@ -9,9 +10,10 @@ class ScenarioManager:
         # Inicializa o nó ROS
         rospy.init_node('scenario_manager', anonymous=True)
 
+        self.scenario_pub = rospy.Publisher('/current_scenario', String, queue_size=10)
         # Parâmetros iniciais
-        self.current_scenario = 15
-        self.max_scenarios = 21
+        self.current_scenario = 1
+        self.max_scenarios = 40
 
         # Flags de controle
         self.scenario_changing = False
@@ -31,18 +33,28 @@ class ScenarioManager:
         """
         Retorna o nome do cenário atual baseado no número do cenário.
         """
-        simulador = 2
+        simulador = 3
         
         if simulador==1:
-            return f"scenario_teste_{self.current_scenario}"
+            scenario_name = f"scenario_teste_{self.current_scenario}"
+            rospy.set_param('/gazebo_scenario/change_velocity', False)
         
         if simulador==2:
             if self.current_scenario > 14:
                 rospy.set_param('/gazebo_scenario/change_velocity', True)
             else:
                 rospy.set_param('/gazebo_scenario/change_velocity', False)
-            return f"sceinario_dissertacao_{self.current_scenario}"
-        return f"scenario_teste_{self.current_scenario}"
+            scenario_name = f"sceinario_dissertacao_{self.current_scenario}"
+
+        if simulador==3:
+            scenario_name = f"scenario_teste_rotate_{self.current_scenario}"
+            rospy.set_param('/gazebo_scenario/change_velocity', False)
+        
+
+
+        # Publicar o nome do cenário
+        self.scenario_pub.publish(scenario_name)
+        return scenario_name
 
     def set_scenario_parameter(self, scenario_number):
         """

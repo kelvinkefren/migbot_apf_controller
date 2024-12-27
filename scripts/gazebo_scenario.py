@@ -22,7 +22,7 @@ TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist 
 # Posição e velocidade iniciais do robô
 INITIAL_ROBOT_POSE = np.array([0,0])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
-INITIAL_ROBOT_ORIENTATION = 45 #45 GRAUS rotacionado para a esquerda (anti-horário)
+INITIAL_ROBOT_ORIENTATION = 0 #45 GRAUS rotacionado para a esquerda (anti-horário)
 
 # Definição de cenários
 SCENARIOS = {
@@ -91,7 +91,7 @@ SCENARIOS = {
     'scenario_teste_12': {'vegetation3_buoy': {'position': [28.28, 28.28], 'velocity': [0.6, -0.75]}},
 
     'scenario_teste_13': {'vegetation3_buoy': {'position': [-6.94, -39.39], 'velocity': [1.3, 1.1]}},
-    'scenario_teste_14': {'vegetation3_buoy': {'position': [-6.94, -39.39], 'velocity': [1.6, 1.0]}},  # colisão
+    'scenario_teste_14': {'vegetation3_buoy': {'position': [-6.94, -39.39], 'velocity': [1.6, 1.1]}},  # colisão
     'scenario_teste_15': {'vegetation3_buoy': {'position': [-13.68, 37.59], 'velocity': [1.3, -1.1]}},
     'scenario_teste_16': {'vegetation3_buoy': {'position': [-13.68, 37.59], 'velocity': [1.6, -1]}},
 
@@ -123,6 +123,47 @@ SCENARIOS = {
     'scenario_teste_38': {'vegetation3_buoy': {'position': [-14.49, -3.88], 'velocity': [2.5, 0.7]}},
     'scenario_teste_39': {'vegetation3_buoy': {'position': [-14.49, 3.88], 'velocity': [2.5, -0.3]}},
     'scenario_teste_40': {'vegetation3_buoy': {'position': [-14.49, 3.88], 'velocity': [2.5, -0.7]}},
+
+    'scenario_teste_rotate_1': {'vegetation3_buoy': {'position': [25.73, 30.67], 'velocity': [-0.1061, -0.1768]}},
+    'scenario_teste_rotate_2': {'vegetation3_buoy': {'position': [25.73, 30.67], 'velocity': [-0.1768, -0.1061]}},
+    'scenario_teste_rotate_3': {'vegetation3_buoy': {'position': [25.73, 30.67], 'velocity': [0.1768, 0.1061]}},
+    'scenario_teste_rotate_4': {'vegetation3_buoy': {'position': [25.73, 30.67], 'velocity': [0.1061, 0.1768]}},
+    'scenario_teste_rotate_5': {'vegetation3_buoy': {'position': [30.67, 25.73], 'velocity': [-0.1061, -0.1768]}},
+    'scenario_teste_rotate_6': {'vegetation3_buoy': {'position': [30.67, 25.73], 'velocity': [-0.1768, -0.1061]}},
+    'scenario_teste_rotate_7': {'vegetation3_buoy': {'position': [30.67, 25.73], 'velocity': [0.1768, 0.1061]}},
+    'scenario_teste_rotate_8': {'vegetation3_buoy': {'position': [30.67, 25.73], 'velocity': [0.1061, 0.1768]}},
+    'scenario_teste_rotate_9': {'vegetation3_buoy': {'position': [40.00, 0.00], 'velocity': [0.0354, 0.6717]}},
+    'scenario_teste_rotate_10': {'vegetation3_buoy': {'position': [40.00, 0.00], 'velocity': [-0.3536, 1.0607]}},
+    'scenario_teste_rotate_11': {'vegetation3_buoy': {'position': [0.00, 40.00], 'velocity': [0.8130, 0.0354]}},
+    'scenario_teste_rotate_12': {'vegetation3_buoy': {'position': [0.00, 40.00], 'velocity': [0.9546, -0.1061]}},
+    'scenario_teste_rotate_13': {'vegetation3_buoy': {'position': [22.96, -32.77], 'velocity': [0.1414, 1.6970]}},
+    'scenario_teste_rotate_14': {'vegetation3_buoy': {'position': [22.96, -32.77], 'velocity': [0.3536, 1.9092]}},
+    'scenario_teste_rotate_15': {'vegetation3_buoy': {'position': [-36.24, 16.90], 'velocity': [1.6970, 0.1414]}},
+    'scenario_teste_rotate_16': {'vegetation3_buoy': {'position': [-36.24, 16.90], 'velocity': [1.8385, 0.4243]}},
+    'scenario_teste_rotate_17': {'vegetation3_buoy': {'position': [-20.00, -34.64], 'velocity': [1.5556, 1.9799]}},
+    'scenario_teste_rotate_18': {'vegetation3_buoy': {'position': [-20.00, -34.64], 'velocity': [1.2728, 2.2627]}},
+    'scenario_teste_rotate_19': {'vegetation3_buoy': {'position': [-34.64, -20.00], 'velocity': [1.9799, 1.5556]}},
+    'scenario_teste_rotate_20': {'vegetation3_buoy': {'position': [-34.64, -20.00], 'velocity': [2.2627, 1.2728]}},
+    'scenario_teste_rotate_21': {'vegetation3_buoy': {'position': [9.64, 11.50], 'velocity': [-0.1061, -0.1768]}},
+    'scenario_teste_rotate_22': {'vegetation3_buoy': {'position': [9.64, 11.50], 'velocity': [-0.1768, -0.1061]}},
+    'scenario_teste_rotate_23': {'vegetation3_buoy': {'position': [9.64, 11.50], 'velocity': [0.1768, 0.1061]}},
+    'scenario_teste_rotate_24': {'vegetation3_buoy': {'position': [9.64, 11.50], 'velocity': [0.1061, 0.1768]}},
+    'scenario_teste_rotate_25': {'vegetation3_buoy': {'position': [11.49, 9.63], 'velocity': [-0.1061, -0.1768]}},
+    'scenario_teste_rotate_26': {'vegetation3_buoy': {'position': [11.49, 9.63], 'velocity': [-0.1768, -0.1061]}},
+    'scenario_teste_rotate_27': {'vegetation3_buoy': {'position': [11.49, 9.63], 'velocity': [0.1768, 0.1061]}},
+    'scenario_teste_rotate_28': {'vegetation3_buoy': {'position': [11.49, 9.63], 'velocity': [0.1061, 0.1768]}},
+    'scenario_teste_rotate_29': {'vegetation3_buoy': {'position': [15.00, 0.00], 'velocity': [0.0354, 0.6717]}},
+    'scenario_teste_rotate_30': {'vegetation3_buoy': {'position': [15.00, 0.00], 'velocity': [-0.3536, 1.0607]}},
+    'scenario_teste_rotate_31': {'vegetation3_buoy': {'position': [0.00, 15.00], 'velocity': [0.8130, 0.0354]}},
+    'scenario_teste_rotate_32': {'vegetation3_buoy': {'position': [0.00, 15.00], 'velocity': [0.9546, -0.1061]}},
+    'scenario_teste_rotate_33': {'vegetation3_buoy': {'position': [8.63, -12.30], 'velocity': [0.1414, 1.6970]}},
+    'scenario_teste_rotate_34': {'vegetation3_buoy': {'position': [8.63, -12.30], 'velocity': [0.4243, 1.8385]}},
+    'scenario_teste_rotate_35': {'vegetation3_buoy': {'position': [-13.61, 6.35], 'velocity': [1.6970, 0.1414]}},
+    'scenario_teste_rotate_36': {'vegetation3_buoy': {'position': [-13.61, 6.35], 'velocity': [1.8385, 0.4243]}},
+    'scenario_teste_rotate_37': {'vegetation3_buoy': {'position': [-7.50, -12.98], 'velocity': [1.5556, 1.9799]}},
+    'scenario_teste_rotate_38': {'vegetation3_buoy': {'position': [-7.50, -12.98], 'velocity': [1.2728, 2.2627]}},
+    'scenario_teste_rotate_39': {'vegetation3_buoy': {'position': [-12.98, -7.50], 'velocity': [1.9799, 1.5556]}},
+    'scenario_teste_rotate_40': {'vegetation3_buoy': {'position': [-12.98, -7.50], 'velocity': [2.2627, 1.2728]}}
 }
 
 class Obstacle:
@@ -143,7 +184,7 @@ class GazeboScenario:
         rospy.init_node('gazebo_scenario')
         self.rotation = -60
         # Obter o nome do cenário a partir dos parâmetros ROS
-        self.scenario_name = rospy.get_param('~scenario', 'scenario_teste_3')
+        self.scenario_name = rospy.set_param('~scenario', 'scenario_teste_1')
 
         # Inicializar change_velocity
         self.change_velocity = rospy.get_param('~change_velocity', False)
@@ -323,6 +364,8 @@ def set_robot_position_and_velocity(position, velocity, orientation_degrees):
         state.pose.position.y = position[1]
         state.twist.linear.x = velocity[0]
         state.twist.linear.y = velocity[1]
+        state.twist.angular.x = velocity[0]
+        state.twist.angular.y = velocity[1]
         
         # Converter a orientação de graus para radianos
         orientation_radians = np.deg2rad(orientation_degrees)
