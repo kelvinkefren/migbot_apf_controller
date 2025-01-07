@@ -152,7 +152,7 @@ class SimplePlot:
         plt.pause(0.001)
 
     def run(self):
-        rate = rospy.Rate(1)  # Update the plot at 1 Hz
+        rate = rospy.Rate(100)  # Update the plot at 1 Hz
         while not rospy.is_shutdown():
             self.update_plot()
             rate.sleep()

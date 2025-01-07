@@ -22,7 +22,7 @@ TOPIC_SUB = "/gazebo/model_states"  # Tópico do Gazebo para pegar Pose e Twist 
 # Posição e velocidade iniciais do robô
 INITIAL_ROBOT_POSE = np.array([0,0])  # Posição inicial do robô
 INITIAL_ROBOT_VELOCITY = np.array([0,0])  # Velocidade inicial do robô
-INITIAL_ROBOT_ORIENTATION = 0 #45 GRAUS rotacionado para a esquerda (anti-horário)
+INITIAL_ROBOT_ORIENTATION = 45 #GRAUS rotacionado para a esquerda (anti-horário)
 
 # Definição de cenários
 SCENARIOS = {
@@ -40,21 +40,21 @@ SCENARIOS = {
         'branche3_buoy_clone': {'position':[25,50], 'velocity':[0.3,0]},
     },
 
-    #dissertacao
-    'sceinario_dissertacao_1': {'vegetation3_buoy': {'position': [44, 44], 'velocity': [0, 0]}},
-    'sceinario_dissertacao_2': {'vegetation3_buoy': {'position': [60, 60], 'velocity': [-0.85, -0.85]}},
-    'sceinario_dissertacao_3': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}},
-    'sceinario_dissertacao_4': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [-0.2, 0.95]}},
+    #dissertacao 
+    'sceinario_dissertacao_1': {'vegetation3_buoy': {'position': [44, 44], 'velocity': [0, 0]}}, #estático
+    'sceinario_dissertacao_2': {'vegetation3_buoy': {'position': [60, 60], 'velocity': [-0.85, -0.85]}}, #frontal
+    'sceinario_dissertacao_3': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}}, #Cross A
+    'sceinario_dissertacao_4': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [-0.2, 0.95]}}, #crossing A, efetuar manobra
     'sceinario_dissertacao_5': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.85, 0]}},
-    'sceinario_dissertacao_6': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.95, -0.2]}},
-    'sceinario_dissertacao_7': {'vegetation3_buoy': {'position': [-10, -10], 'velocity': [1.1, 1.1]}},
+    'sceinario_dissertacao_6': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [1.0, -0.2]}},
+    'sceinario_dissertacao_7': {'vegetation3_buoy': {'position': [-10, -10], 'velocity': [1.5, 1.5]}},
 
     'sceinario_dissertacao_8': {'trunk1_buoy': {'position': [44, 44], 'velocity': [0, 0]}, 'vegetation3_buoy': {'position': [200, 200], 'velocity': [0, 0]}},
     'sceinario_dissertacao_9': {'trunk1_buoy': {'position': [60, 60], 'velocity': [-0.85, -0.85]}},
     'sceinario_dissertacao_10': {'trunk1_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}},
     'sceinario_dissertacao_11': {'trunk1_buoy': {'position': [50, 0], 'velocity': [0, 0.95]}},
     'sceinario_dissertacao_12': {'trunk1_buoy': {'position': [0, 50], 'velocity': [0.85, 0]}},
-    'sceinario_dissertacao_13': {'trunk1_buoy': {'position': [0, 50], 'velocity': [0.95, -0.2]}},
+    'sceinario_dissertacao_13': {'trunk1_buoy': {'position': [0, 50], 'velocity': [0.95, -0.5]}},
     'sceinario_dissertacao_14': {'trunk1_buoy': {'position': [-10, -10], 'velocity': [1.4, 1.4]}},
 
     'sceinario_dissertacao_15': {'vegetation3_buoy': {'position': [44, 44], 'velocity': [0, 0]}, 'trunk1_buoy': {'position': [200, 200], 'velocity': [0, 0]}},
@@ -187,7 +187,10 @@ class GazeboScenario:
         self.scenario_name = rospy.set_param('~scenario', 'scenario_teste_1')
 
         # Inicializar change_velocity
-        self.change_velocity = rospy.get_param('~change_velocity', False)
+        self.change_velocity = False
+        
+        # Subscriber para o tópico /change_velocity
+        rospy.Subscriber('/change_velocity', Bool, self.change_velocity_callback)
 
         # Configurar um timer para verificar alterações no parâmetro
         rospy.Timer(rospy.Duration(1.0), self.check_for_parameter_update)
@@ -210,12 +213,21 @@ class GazeboScenario:
         # Configurar as posições e velocidades iniciais com base no cenário
         self.set_initial_positions()
 
+
         # Subscritor para o tópico de estados dos modelos do Gazebo
         self.model_state_sub = rospy.Subscriber(TOPIC_SUB, ModelStates, self.model_states_callback)
-
+        self.time = 20.0
         # Se change_velocity estiver ativado, configurar um timer para 30 segundos
         if self.change_velocity:
-            rospy.Timer(rospy.Duration(30.0), self.update_obstacle_velocities, oneshot=True)
+            rospy.Timer(rospy.Duration(self.time), self.update_obstacle_velocities, oneshot=True)
+
+
+    def change_velocity_callback(self, msg):
+        """
+        Callback para atualizar o valor de change_velocity com base no tópico /change_velocity.
+        """
+        self.change_velocity = msg.data
+        rospy.loginfo(f"change_velocity atualizado para: {self.change_velocity}")
 
     def check_for_parameter_update(self, event):
         new_scenario_name = rospy.get_param('~scenario', self.scenario_name)
@@ -224,15 +236,6 @@ class GazeboScenario:
             self.scenario_name = new_scenario_name
             self.set_initial_positions()
 
-        # Verificar se change_velocity foi alterado
-        new_change_velocity = rospy.get_param('~change_velocity', self.change_velocity)
-        if new_change_velocity != self.change_velocity:
-            self.change_velocity = new_change_velocity
-            if self.change_velocity:
-                rospy.loginfo("change_velocity ativado. Aguardando 30 segundos para atualizar velocidades dos obstáculos.")
-                rospy.Timer(rospy.Duration(15.0), self.update_obstacle_velocities, oneshot=True)
-            else:
-                rospy.loginfo("change_velocity desativado.")
 
     def obstacles_callback(self, data):
         # Implement your logic here

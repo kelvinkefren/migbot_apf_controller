@@ -11,18 +11,20 @@ class ScenarioManager:
         rospy.init_node('scenario_manager', anonymous=True)
 
         self.scenario_pub = rospy.Publisher('/current_scenario', String, queue_size=10)
+        self.change_velocity_pub = rospy.Publisher('/change_velocity', Bool, queue_size=10)
+
         # Parâmetros iniciais
-        self.current_scenario = 1
-        self.max_scenarios = 40
+        self.current_scenario = 10
+        self.max_scenarios = 21
 
         # Flags de controle
         self.scenario_changing = False
         self.in_collision = False
         self.lock = threading.Lock()
 
+        self.simulador=3
         # Define o cenário inicial
         self.set_scenario_parameter(self.current_scenario)
-
         rospy.loginfo(f"Scenario Manager iniciado com {self.get_current_scenario_name()}")
 
         # Subscribers
@@ -33,28 +35,35 @@ class ScenarioManager:
         """
         Retorna o nome do cenário atual baseado no número do cenário.
         """
-        simulador = 3
-        
-        if simulador==1:
+        if self.simulador==1:
             scenario_name = f"scenario_teste_{self.current_scenario}"
-            rospy.set_param('/gazebo_scenario/change_velocity', False)
+            self.publish_change_velocity(False)
         
-        if simulador==2:
+        if self.simulador==2:
             if self.current_scenario > 14:
-                rospy.set_param('/gazebo_scenario/change_velocity', True)
-            else:
-                rospy.set_param('/gazebo_scenario/change_velocity', False)
+                self.publish_change_velocity(True)
+            else:                
+                self.publish_change_velocity(False)
             scenario_name = f"sceinario_dissertacao_{self.current_scenario}"
 
-        if simulador==3:
+        if self.simulador==3:
             scenario_name = f"scenario_teste_rotate_{self.current_scenario}"
-            rospy.set_param('/gazebo_scenario/change_velocity', False)
+            self.publish_change_velocity(False)
         
 
 
         # Publicar o nome do cenário
         self.scenario_pub.publish(scenario_name)
         return scenario_name
+
+
+    def publish_change_velocity(self, value):
+        """
+        Publica o valor de change_velocity no tópico /change_velocity.
+        """
+        msg = Bool()
+        msg.data = value
+        self.change_velocity_pub.publish(msg)
 
     def set_scenario_parameter(self, scenario_number):
         """
