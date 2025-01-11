@@ -46,7 +46,7 @@ SCENARIOS = {
     'sceinario_dissertacao_3': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [0, 0.85]}}, #Cross A
     'sceinario_dissertacao_4': {'vegetation3_buoy': {'position': [50, 0], 'velocity': [-0.2, 0.95]}}, #crossing A, efetuar manobra
     'sceinario_dissertacao_5': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.85, 0]}},
-    'sceinario_dissertacao_6': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [1.0, -0.2]}},
+    'sceinario_dissertacao_6': {'vegetation3_buoy': {'position': [0, 50], 'velocity': [0.7, -0.2]}},
     'sceinario_dissertacao_7': {'vegetation3_buoy': {'position': [-10, -10], 'velocity': [1.5, 1.5]}},
 
     'sceinario_dissertacao_8': {'trunk1_buoy': {'position': [44, 44], 'velocity': [0, 0]}, 'vegetation3_buoy': {'position': [200, 200], 'velocity': [0, 0]}},
@@ -219,7 +219,7 @@ class GazeboScenario:
         self.time = 20.0
         # Se change_velocity estiver ativado, configurar um timer para 30 segundos
         if self.change_velocity:
-            rospy.Timer(rospy.Duration(self.time), self.update_obstacle_velocities, oneshot=True)
+            rospy.Timer(rospy.Duration(self.time), self.rotate_obstacle_velocities, oneshot=True)#update_obstacle_velocities, oneshot=True)
 
 
     def change_velocity_callback(self, msg):
@@ -227,6 +227,9 @@ class GazeboScenario:
         Callback para atualizar o valor de change_velocity com base no tópico /change_velocity.
         """
         self.change_velocity = msg.data
+        if self.change_velocity:
+            rospy.Timer(rospy.Duration(self.time), self.rotate_obstacle_velocities, oneshot=True)#update_obstacle_velocities, oneshot=True)
+        
         rospy.loginfo(f"change_velocity atualizado para: {self.change_velocity}")
 
     def check_for_parameter_update(self, event):
