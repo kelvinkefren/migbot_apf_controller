@@ -1,6 +1,6 @@
 wrench_calculator:
-  max_wrench: 0.2  #1 m/s
-  max_torque_wrench: 0.2
-  min_torque_wrench: -0.2
-  max_linear_speed: 1 #NOT BEING USED
+  max_wrench: 0.4  #1 m/s = 0.2
+  max_torque_wrench: 0.4
+  min_torque_wrench: -0.4
+  max_linear_speed: 2 #NOT BEING USED
   tolerance: 3.0 

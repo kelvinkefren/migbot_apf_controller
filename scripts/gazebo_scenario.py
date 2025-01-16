@@ -72,8 +72,28 @@ SCENARIOS = {
         'vegetation3_buoy_clone': {'position': [6.8, 4.9], 'velocity': [0, 0]},
         'vegetation3_buoy_clone_clone': {'position': [7.0, 0], 'velocity': [-8, 8]},
         'vegetation3_buoy_clone_clone_clone': {'position': [7.5, 7], 'velocity': [-8, -8]},
-        'vegetation3_buoy_clone_clone_clone_clone': {'position': [6, 8], 'velocity': [0, -3]},
+        'branche3_buoy': {'position': [6, 8], 'velocity': [0, -3]},
         'vegetation3_buoy_trunk1_buoy': {'position': [4, 8], 'velocity': [2.8, -1.6]},
+    },
+
+    #artigo translated:
+    'scenario_from_table_converted': {
+        # Obstacles as per the table
+        'vegetation3_buoy': {'position': [54.6, 15.4], 'velocity': [0, 0]},
+        'vegetation3_buoy_clone': {'position': [47.6, 34.3], 'velocity': [0, 0]},
+        'vegetation3_buoy_clone_clone': {'position': [49.0, 0], 'velocity': [-0.8, 0.8]},
+        'vegetation3_buoy_clone_clone_clone': {'position': [52.5, 49.0], 'velocity': [-0.8, -0.8]},
+        'branche3_buoy': {'position': [32.0, 46.0], 'velocity': [0, -0.5]},
+        'trunk1_buoy': {'position': [25.0, 50.0], 'velocity': [0.2, -0.2]},
+    },
+    'scenario_from_table_converted_inverted': {
+        # Obstáculos com posições invertidas para saída em (70,70) e chegada em (0,0)
+        'vegetation3_buoy': {'position': [15.4, 54.6],'velocity': [0, 0]},
+        'vegetation3_buoy_clone': {'position': [22.4, 35.7],'velocity': [0, 0]},
+        'vegetation3_buoy_clone_clone': {'position': [21.0, 70],'velocity': [1, -1]},
+        'vegetation3_buoy_clone_clone_clone': {'position': [17.5, 21.0],'velocity': [1, 1]},
+        'branche3_buoy': {'position': [28.0, 14.0],'velocity': [0, 1.2]},
+        'trunk1_buoy': {'position': [10.0, 14.0],'velocity': [-0.1, 0.1]},
     },
 
     'scenario_teste_1': {'vegetation3_buoy': {'position': [39.85, 3.49], 'velocity': [-0.2, -0.05]}},
@@ -182,12 +202,20 @@ class Obstacle:
 class GazeboScenario:
     def __init__(self):
         rospy.init_node('gazebo_scenario')
-        self.rotation = -60
+        self.rotation = -30
         # Obter o nome do cenário a partir dos parâmetros ROS
-        self.scenario_name = rospy.set_param('~scenario', 'scenario_teste_1')
+        self.scenario_name = rospy.set_param('~scenario', 'sceinario_dissertacao_5')
 
+        # Obter o nome do cenário
+        self.scenario_real_name = rospy.get_param('~scenario')
+
+        if self.scenario_real_name == 'scenario_from_table_converted' or self.scenario_real_name == 'scenario_from_table_converted_inverted':
+            self.change_velocity = True
+        else:
+            self.change_velocity = False
+        
         # Inicializar change_velocity
-        self.change_velocity = False
+        
         
         # Subscriber para o tópico /change_velocity
         rospy.Subscriber('/change_velocity', Bool, self.change_velocity_callback)
@@ -216,7 +244,7 @@ class GazeboScenario:
 
         # Subscritor para o tópico de estados dos modelos do Gazebo
         self.model_state_sub = rospy.Subscriber(TOPIC_SUB, ModelStates, self.model_states_callback)
-        self.time = 20.0
+        self.time = 8.0
         # Se change_velocity estiver ativado, configurar um timer para 30 segundos
         if self.change_velocity:
             rospy.Timer(rospy.Duration(self.time), self.rotate_obstacle_velocities, oneshot=True)#update_obstacle_velocities, oneshot=True)
@@ -401,8 +429,8 @@ def set_obstacle_position_and_velocity(name, position, velocity):
         state.model_name = name
         state.pose.position.x = position[0]
         state.pose.position.y = position[1]
-        state.twist.linear.x = velocity[0]
-        state.twist.linear.y = velocity[1]
+        state.twist.linear.x = 2*velocity[0]
+        state.twist.linear.y = 2*velocity[1]
         state.pose.orientation = Quaternion(0, 0, 0.3827, 0.9239)  # Sem rotação
 
         response = set_state(state)
