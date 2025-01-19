@@ -14,7 +14,7 @@ class ScenarioManager:
         self.change_velocity_pub = rospy.Publisher('/change_velocity', Bool, queue_size=10)
 
         # Parâmetros iniciais
-        self.current_scenario = 1
+        self.current_scenario = 14
         self.max_scenarios = 21
 
         # Flags de controle

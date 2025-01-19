@@ -202,13 +202,13 @@ class Obstacle:
 class GazeboScenario:
     def __init__(self):
         rospy.init_node('gazebo_scenario')
-        self.rotation = -30
+        self.rotation = 30
         # Obter o nome do cenário a partir dos parâmetros ROS
         self.scenario_name = rospy.set_param('~scenario', 'sceinario_dissertacao_5')
 
         # Obter o nome do cenário
         self.scenario_real_name = rospy.get_param('~scenario')
-
+        
         if self.scenario_real_name == 'scenario_from_table_converted' or self.scenario_real_name == 'scenario_from_table_converted_inverted':
             self.change_velocity = True
         else:
