@@ -14,7 +14,7 @@ class ScenarioManager:
         self.change_velocity_pub = rospy.Publisher('/change_velocity', Bool, queue_size=10)
 
         # Parâmetros iniciais
-        self.current_scenario = 14
+        self.current_scenario = 1
         self.max_scenarios = 21
 
         # Flags de controle
@@ -28,7 +28,7 @@ class ScenarioManager:
         rospy.loginfo(f"Scenario Manager iniciado com {self.get_current_scenario_name()}")
 
         # Subscribers
-        self.reached_goal_sub = rospy.Subscriber('/apfm/reached_goal', Bool, self.goal_callback)
+        self.reached_goal_sub = rospy.Subscriber('/scenario/reached_goal', Bool, self.goal_callback)
         self.colisao_sub = rospy.Subscriber('/obstacle_avoidance/collision', Bool, self.colisao_callback)
 
     def get_current_scenario_name(self):
@@ -75,7 +75,7 @@ class ScenarioManager:
 
     def goal_callback(self, msg):
         """
-        Callback chamado quando uma mensagem é recebida no tópico /apfm/reached_goal.
+        Callback chamado quando uma mensagem é recebida no tópico /scenario/reached_goal.
         Se msg.data for True e não houver uma mudança de cenário em progresso, incrementa o cenário e define o novo parâmetro.
         """
         if msg.data:

@@ -203,8 +203,19 @@ class GazeboScenario:
     def __init__(self):
         rospy.init_node('gazebo_scenario')
         self.rotation = 30
-        # Obter o nome do cenário a partir dos parâmetros ROS
-        self.scenario_name = rospy.set_param('~scenario', 'sceinario_dissertacao_5')
+        # --------- NOVO: parâmetros para estacionar obstáculos não usados ---------
+        self.park_unused_obstacles = bool(rospy.get_param('~park_unused_obstacles', True))
+        self.publish_only_active_obstacles = bool(rospy.get_param('~publish_only_active_obstacles', True))
+        self.park_base_x = float(rospy.get_param('~park_base_x', -120.0))
+        self.park_base_y = float(rospy.get_param('~park_base_y', -120.0))
+        self.park_spacing = float(rospy.get_param('~park_spacing', 100.0))
+        self.park_cols = int(rospy.get_param('~park_cols', 5))
+        self.park_z = float(rospy.get_param('~park_z', 0.0))
+
+        # Obter o nome do cenário a partir dos parâmetros ROS (FIX: não usar set_param como retorno)
+        if not rospy.has_param('~scenario'):
+            rospy.set_param('~scenario', 'sceinario_dissertacao_5')
+        self.scenario_name = rospy.get_param('~scenario', 'sceinario_dissertacao_5')
 
         # Obter o nome do cenário
         self.scenario_real_name = rospy.get_param('~scenario')
@@ -226,6 +237,8 @@ class GazeboScenario:
         # Inicializar o robô e os obstáculos
         self.migbot = RobotState()
         self.obstacles = [Obstacle(name, radius) for name, radius in zip(OBSTACLE_NAMES, OBSTACLE_RADIUS)]
+        # Lista de obstáculos ativos no cenário atual
+        self.active_obstacle_names = set()
 
         # Subscriber to the /obstacles topic
         rospy.Subscriber('/obstacles', ObstacleArray, self.obstacles_callback)
@@ -271,6 +284,27 @@ class GazeboScenario:
     def obstacles_callback(self, data):
         # Implement your logic here
         pass
+ 
+    def _park_inactive_obstacles(self, active_names):
+        """Move todos os obstáculos que NÃO estão no cenário atual para um 'estacionamento' com espaçamento grande.
+
+        Isso evita que obstáculos "sobrando" colidam entre si, sejam ejetados pela física e depois resetem para (0,0).
+        """
+        if not self.park_unused_obstacles:
+            return
+
+        inactive = [n for n in OBSTACLE_NAMES if n not in active_names]
+        if not inactive:
+            return
+
+        for i, name in enumerate(inactive):
+            col = i % max(1, self.park_cols)
+            row = i // max(1, self.park_cols)
+            x = self.park_base_x + col * self.park_spacing
+            y = self.park_base_y + row * self.park_spacing
+            set_obstacle_position_and_velocity(name, [x, y, self.park_z], [0.0, 0.0])
+
+        rospy.loginfo(f"Estacionados {len(inactive)} obstáculos fora do cenário: {inactive}")
 
     def set_initial_positions(self):
         # Configura a posição inicial e a velocidade do robô
@@ -284,12 +318,19 @@ class GazeboScenario:
         else:
             rospy.logerr("Falha ao definir a posição e orientação do robô.")
 
-        if self.scenario_name in SCENARIOS:
-            scenario = SCENARIOS[self.scenario_name]
-            for name, config in scenario.items():
-                position = config['position']
-                velocity = config['velocity']
-                set_obstacle_position_and_velocity(name, position, velocity)
+
+        # Define quais obstáculos estão ativos no cenário atual
+        scenario = SCENARIOS.get(self.scenario_name, {})
+        self.active_obstacle_names = set(scenario.keys())
+
+        # Posiciona apenas os obstáculos do cenário
+        for name, config in scenario.items():
+            position = config['position']
+            velocity = config['velocity']
+            set_obstacle_position_and_velocity(name, position, velocity)
+
+        # Estaciona os demais
+        self._park_inactive_obstacles(self.active_obstacle_names)
 
     def model_states_callback(self, data):
 
@@ -304,6 +345,9 @@ class GazeboScenario:
                 self.migbot.radius = self.robot_domain_radius
                 self.robot_pub.publish(self.migbot)
             elif name in OBSTACLE_NAMES:
+                # NOVO: só publica/atualiza obstáculos ativos
+                if self.publish_only_active_obstacles and (name not in self.active_obstacle_names):
+                    continue
                 for ob in self.obstacles:
                     if ob.name == name:
                         ob.update(data.pose[i], data.twist[i])
@@ -332,11 +376,14 @@ class GazeboScenario:
         ])
 
         for ob in self.obstacles:
+            # NOVO: só rotaciona obstáculos ativos
+            if ob.name not in self.active_obstacle_names:
+                continue
             velocity_vector = np.array([ob.velocity.x, ob.velocity.y])
             rotated_velocity = rotation_matrix.dot(velocity_vector)
             ob.velocity.x = rotated_velocity[0]
             ob.velocity.y = rotated_velocity[1]
-            set_obstacle_position_and_velocity(ob.name, [ob.position.x, ob.position.y], rotated_velocity)
+            set_obstacle_position_and_velocity(ob.name, [ob.position.x, ob.position.y, self.park_z], rotated_velocity)
         rospy.loginfo("Obstacle velocities rotated by 60 degrees clockwise")
 
     def update_obstacle_velocities(self, event):
@@ -396,10 +443,14 @@ def set_robot_position_and_velocity(position, velocity, orientation_degrees):
         state.model_name = ROBOT_NAME
         state.pose.position.x = position[0]
         state.pose.position.y = position[1]
+        state.pose.position.z = 0.0
         state.twist.linear.x = velocity[0]
         state.twist.linear.y = velocity[1]
-        state.twist.angular.x = velocity[0]
-        state.twist.angular.y = velocity[1]
+        state.twist.linear.z = 0.0
+        # FIX: angular deve ser z (yaw), não x/y
+        state.twist.angular.x = 0.0
+        state.twist.angular.y = 0.0
+        state.twist.angular.z = 0.0
         
         # Converter a orientação de graus para radianos
         orientation_radians = np.deg2rad(orientation_degrees)
@@ -422,6 +473,10 @@ def set_robot_position_and_velocity(position, velocity, orientation_degrees):
         return False
 
 def set_obstacle_position_and_velocity(name, position, velocity):
+    """Seta pose e twist do obstáculo no Gazebo.
+
+        position pode ser [x,y] ou [x,y,z].
+    """
     rospy.wait_for_service('/gazebo/set_model_state')
     try:
         set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
@@ -429,9 +484,19 @@ def set_obstacle_position_and_velocity(name, position, velocity):
         state.model_name = name
         state.pose.position.x = position[0]
         state.pose.position.y = position[1]
-        state.twist.linear.x = 2*velocity[0]
-        state.twist.linear.y = 2*velocity[1]
-        state.pose.orientation = Quaternion(0, 0, 0.3827, 0.9239)  # Sem rotação
+        state.pose.position.z = float(position[2]) if len(position) >= 3 else 0.0
+
+        # Mantém compatibilidade com seu comportamento antigo (escala 2x)
+        state.twist.linear.x = 2 * float(velocity[0])
+        state.twist.linear.y = 2 * float(velocity[1])
+        state.twist.linear.z = 0.0
+
+        state.twist.angular.x = 0.0
+        state.twist.angular.y = 0.0
+        state.twist.angular.z = 0.0
+
+        # Orientação padrão (sem rotação)
+        state.pose.orientation = Quaternion(0, 0, 0, 1)
 
         response = set_state(state)
         return response.success

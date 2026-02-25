@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+gazebo_scenario_C2_s_curve_two_crossing.py
+
+Cenário fixo (v2 NO-CLONES): C2_s_curve_two_crossing
+"""
+import numpy as np
+import rospy
+from gazebo_scenario_v2_lib import GazeboScenarioV2Runner, unit, rot90_ccw
+
+def build_cfg(start, goal, dm_ref):
+    start = np.array(start, dtype=float)
+    goal  = np.array(goal, dtype=float)
+    u = unit(goal - start)
+    n = rot90_ccw(u)
+
+    def along(t):
+        return start + t*(goal - start)
+
+    def W(f):
+        return float(f * dm_ref)
+
+    return dict(
+        robot=dict(pos=start, vel=[0.0,0.0], yaw_deg=45.0),
+        obstacles={
+        'vegetation3_buoy': dict(pos=along(0.45) - 1.5*dm_ref*n, vel=(0.80*n).tolist()),
+        'branche3_buoy': dict(pos=along(0.70) + 1.5*dm_ref*n, vel=(-0.80*n).tolist()),
+    },
+        walls=dict(enabled=True, kind='s_curve', width=W(3.2), pieces=3),
+        events=[
+        dict(t=10.0, type='scale_velocity', target='branche3_buoy', scale=1.2),
+    ]
+    )
+
+if __name__ == '__main__':
+    try:
+        GazeboScenarioV2Runner('C2_s_curve_two_crossing', build_cfg).spin()
+    except rospy.ROSInterruptException:
+        pass
