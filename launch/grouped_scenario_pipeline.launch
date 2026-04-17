@@ -1,0 +1,163 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- ======= Simulation / Perception ======= -->
+  <arg name="gui" default="true"/>
+  <arg name="verbose" default="true"/>
+  <arg name="extra_gazebo_args" default=""/>
+  <arg name="open_rviz" default="false"/>
+  <arg name="enable_apf_in_sim" default="false"/>
+
+  <arg name="sim_x" default="-280"/>
+  <arg name="sim_y" default="-270"/>
+  <arg name="sim_z" default="0.1"/>
+  <arg name="sim_P" default="0"/>
+  <arg name="sim_R" default="0"/>
+  <arg name="sim_Y" default="2.82"/>
+
+  <!-- Avoid duplicate publishers on /scenario/input_robot.
+       The grouped scenario manager becomes the single source for that topic. -->
+  <param name="/ownship_state_bridge/output_topic" value="/scenario/input_robot_perception"/>
+
+  <include file="$(find migbot_gazebo)/launch/madeira_river_3d_lidar_perception_markers.launch">
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="verbose" value="$(arg verbose)"/>
+    <arg name="extra_gazebo_args" value="$(arg extra_gazebo_args)"/>
+    <arg name="open_rviz" value="$(arg open_rviz)"/>
+    <arg name="enable_apf" value="$(arg enable_apf_in_sim)"/>
+    <arg name="x" value="$(arg sim_x)"/>
+    <arg name="y" value="$(arg sim_y)"/>
+    <arg name="z" value="$(arg sim_z)"/>
+    <arg name="P" value="$(arg sim_P)"/>
+    <arg name="R" value="$(arg sim_R)"/>
+    <arg name="Y" value="$(arg sim_Y)"/>
+  </include>
+
+  <!-- ======= Shared defaults for scenario controller + APF ======= -->
+  <rosparam file="$(find dynamic_obstacle_avoidance)/config/parameters.yaml" command="load"/>
+
+  <!-- ======= Goal / scenario progression ======= -->
+  <arg name="goal_x" default="70.0"/>
+  <arg name="goal_y" default="70.0"/>
+  <arg name="goal_tolerance" default="1.0"/>
+
+  <!-- ======= Grouped scenario manager ======= -->
+  <arg name="robot_initial_x" default="0.0"/>
+  <arg name="robot_initial_y" default="0.0"/>
+  <arg name="robot_initial_vx" default="0.0"/>
+  <arg name="robot_initial_vy" default="0.0"/>
+  <arg name="robot_initial_yaw_deg" default="45.0"/>
+  <arg name="obstacle_yaw_deg" default="0.0"/>
+  <arg name="transition_cooldown_s" default="2.0"/>
+  <arg name="pause_physics_during_reset" default="true"/>
+  <arg name="call_reset_simulation" default="true"/>
+  <arg name="park_base_x" default="500.0"/>
+  <arg name="park_base_y" default="500.0"/>
+  <arg name="park_spacing" default="10.0"/>
+
+  <node pkg="migbot_apf_controller"
+        type="grouped_scenario_manager.py"
+        name="grouped_scenario_manager"
+        output="screen">
+    <rosparam param="robot_initial_pose" subst_value="true">[$(arg robot_initial_x), $(arg robot_initial_y)]</rosparam>
+    <rosparam param="robot_initial_velocity" subst_value="true">[$(arg robot_initial_vx), $(arg robot_initial_vy)]</rosparam>
+    <param name="robot_initial_yaw_deg" value="$(arg robot_initial_yaw_deg)"/>
+    <param name="obstacle_yaw_deg" value="$(arg obstacle_yaw_deg)"/>
+    <param name="goal_tolerance" value="$(arg goal_tolerance)"/>
+    <param name="transition_cooldown_s" value="$(arg transition_cooldown_s)"/>
+    <param name="pause_physics_during_reset" value="$(arg pause_physics_during_reset)"/>
+    <param name="call_reset_simulation" value="$(arg call_reset_simulation)"/>
+    <rosparam param="park_base_xy" subst_value="true">[$(arg park_base_x), $(arg park_base_y)]</rosparam>
+    <param name="park_spacing" value="$(arg park_spacing)"/>
+    <!-- Leave scenario_sequence unset to use DEFAULT_SEQUENCE from the script.
+         Example override:
+         <rosparam param="scenario_sequence">[1, 2, 3, 4]</rosparam>
+    -->
+  </node>
+
+  <!-- ======= Input -> output bridge for APF pipeline ======= -->
+  <node pkg="dynamic_obstacle_avoidance"
+        type="scenario_controller.py"
+        name="scenario_controller"
+        output="screen">
+    <param name="scenario" value="0"/>
+    <param name="goal_x" value="$(arg goal_x)"/>
+    <param name="goal_y" value="$(arg goal_y)"/>
+    <param name="tolerance" value="$(arg goal_tolerance)"/>
+  </node>
+
+  <!-- ======= Obstacle avoidance method ======= -->
+  <arg name="start_method" default="true"/>
+  <arg name="method_node" default="apfm_obstacle_avoidance.py"/>
+  <arg name="method_start_delay_s" default="0.0"/>
+
+  <group if="$(arg start_method)">
+    <!-- Keep the node name as apfm_obstacle_avoidance so the existing YAML
+         private-parameter block continues to apply even if method_node changes. -->
+    <node pkg="dynamic_obstacle_avoidance"
+          type="$(arg method_node)"
+          name="apfm_obstacle_avoidance"
+          output="screen"
+          launch-prefix="bash -lc 'sleep $(arg method_start_delay_s); exec '"/>
+  </group>
+
+  <!-- ======= Force -> v_ref,w_ref ======= -->
+  <arg name="start_force_to_vw" default="true"/>
+  <arg name="force_to_vw_params" default="$(find migbot_apf_vw_ref)/config/params.yaml"/>
+
+  <group if="$(arg start_force_to_vw)">
+    <node pkg="migbot_apf_vw_ref"
+          type="apf_force_to_vw_ref.py"
+          name="apf_force_to_vw_ref"
+          output="screen">
+      <rosparam command="load" file="$(arg force_to_vw_params)"/>
+    </node>
+  </group>
+
+  <!-- ======= Velocity controller ======= -->
+  <arg name="start_velocity_controller" default="true"/>
+
+  <group if="$(arg start_velocity_controller)">
+    <include file="$(find migbot_velocity_feedback_controller)/launch/velocity_feedback_control.launch"/>
+  </group>
+
+  <!-- ======= Thruster allocation ======= -->
+  <arg name="start_allocation" default="true"/>
+
+  <group if="$(arg start_allocation)">
+    <node pkg="migbot_allocation"
+          type="migbot_allocation_node"
+          name="migbot_allocation"
+          output="screen"/>
+  </group>
+
+  <!-- ======= Optional debug plot ======= -->
+  <arg name="open_debug_plot" default="false"/>
+  <arg name="debug_view_radius" default="45"/>
+  <arg name="debug_rate_hz" default="20"/>
+
+  <group if="$(arg open_debug_plot)">
+    <node pkg="migbot_apf_controller"
+          type="debug_plot_v2_walls.py"
+          name="debug_plot"
+          output="screen">
+      <param name="view_radius" value="$(arg debug_view_radius)"/>
+      <param name="rate_hz" value="$(arg debug_rate_hz)"/>
+    </node>
+  </group>
+
+  <!-- ======= Optional geometric collision watchdog ======= -->
+  <arg name="start_collision_watchdog" default="false"/>
+  <arg name="pause_gazebo_physics_on_collision" default="true"/>
+  <arg name="ignore_walls_in_collision" default="false"/>
+
+  <group if="$(arg start_collision_watchdog)">
+    <node pkg="migbot_apf_controller"
+          type="collision_watchdog.py"
+          name="collision_watchdog"
+          output="screen">
+      <param name="pause_gazebo_physics" value="$(arg pause_gazebo_physics_on_collision)"/>
+      <param name="ignore_walls" value="$(arg ignore_walls_in_collision)"/>
+    </node>
+  </group>
+</launch>

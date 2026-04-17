@@ -68,7 +68,7 @@
     <param name="circles_from_visibles"  value="true"/>
     <param name="discard_converted_segments" value="false"/>
     <param name="transform_coordinates"  value="true"/>
-    <param name="min_group_points"     value="2"/>
+    <param name="min_group_points"     value="3"/>
     <param name="max_group_distance"   value="5"/>
     <param name="distance_proportion"  value="0.00628"/>
     <param name="max_split_distance"   value="5"/>
